@@ -1,9 +1,10 @@
 <template>
   <nav class="navbar navbar-expand-sm navbar-light bg-light border-bottom">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">
+      <router-link class="navbar-brand d-flex align-items-center" to="/">
         <img src="@/assets/imgs/logo.svg" alt="Nutrition NFP" height="40" />
-      </a>
+        <span class="fw-bold ms-2">Nutrition NFP</span>
+      </router-link>
       <button
         class="navbar-toggler"
         type="button"
@@ -17,18 +18,28 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav ms-auto gap-2">
-          <li class="nav-item"><a class="nav-link" href="#">Courses</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Recipes</a></li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Meal Planner</a>
+            <router-link class="nav-link" to="/courses">Courses</router-link>
           </li>
           <li class="nav-item">
-            <a class="btn btn-outline-dark btn-sm mt-1 w-100" href="#"
-              >Sign in</a
+            <router-link class="nav-link" to="/recipes">Recipes</router-link>
+          </li>
+          <li class="nav-item">
+            <router-link class="nav-link" to="/planner"
+              >Planner</router-link
             >
           </li>
           <li class="nav-item">
-            <a class="btn btn-dark btn-sm mt-1 w-100" href="#">Register</a>
+            <router-link
+              class="btn btn-outline-dark btn-sm mt-1 w-100"
+              to="/login"
+              >Login</router-link
+            >
+          </li>
+          <li class="nav-item">
+            <router-link class="btn btn-dark btn-sm mt-1 w-100" to="/register"
+              >Register</router-link
+            >
           </li>
         </ul>
       </div>
