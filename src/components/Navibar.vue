@@ -2,7 +2,7 @@
   <nav class="navbar navbar-expand-sm navbar-light bg-light border-bottom">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">
-        <img src="/src/assets/imgs/logo.svg" alt="Nutrition NFP" height="40" />
+        <img src="@/assets/imgs/logo.svg" alt="Nutrition NFP" height="40" />
       </a>
       <button
         class="navbar-toggler"

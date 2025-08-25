@@ -4,7 +4,7 @@
       <div>
         <div class="fw-bold mb-2">
           <img
-            src="/src/assets/imgs/logo-dark.svg"
+            src="@/assets/imgs/logo-dark.svg"
             alt="Nutrition NFP"
             height="42"
           />
