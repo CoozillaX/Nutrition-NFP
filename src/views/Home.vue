@@ -1,6 +1,6 @@
 <template>
   <section
-    class="py-5 bg-light text-center d-flex flex-column justify-content-center min-vh-100"
+    class="bg-light text-center d-flex flex-column justify-content-center min-vh-100"
   >
     <div class="container">
       <h1 class="display-5 fw-bold">Welcome to Nutrition NFP</h1>
