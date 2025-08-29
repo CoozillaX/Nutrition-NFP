@@ -81,7 +81,7 @@
             lowercase, a number, and a special character.
           </div>
         </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="submit" class="btn btn-primary" @click="submitForm">Submit</button>
         <button type="button" class="btn btn-secondary ms-2" @click="clearForm">
           Clear
         </button>
@@ -103,7 +103,9 @@ const submitForm = () => {
   validateName();
   validateEmail();
   validatePassword();
-  if (!errors.value.username && !errors.value.password) {
+  if (!errors.value.username && !errors.value.email && !errors.value.password) {
+    alert(JSON.stringify(formData.value, null, 2));
+    clearForm();
   }
 };
 
