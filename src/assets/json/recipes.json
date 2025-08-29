@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "Avocado Salad",
+    "summary": "Fresh avocado salad with lime dressing for a quick healthy meal."
+  },
+  {
+    "id": 2,
+    "name": "Grilled Chicken Wrap",
+    "summary": "Whole wheat wrap filled with grilled chicken and fresh veggies."
+  },
+  {
+    "id": 3,
+    "name": "Vegetable Stir Fry",
+    "summary": "Colorful mixed vegetables stir-fried with soy and sesame sauce."
+  },
+  {
+    "id": 4,
+    "name": "Oatmeal Breakfast Bowl",
+    "summary": "Warm oats topped with fruits, nuts, and honey for energy."
+  },
+  {
+    "id": 5,
+    "name": "Lentil Soup",
+    "summary": "Hearty lentil soup packed with protein and rich spices."
+  },
+  {
+    "id": 6,
+    "name": "Quinoa Salad",
+    "summary": "Nutritious quinoa with cucumber, tomato, and lemon vinaigrette."
+  },
+  {
+    "id": 7,
+    "name": "Fruit Smoothie",
+    "summary": "Refreshing blend of bananas, berries, and almond milk."
+  },
+  {
+    "id": 8,
+    "name": "Baked Salmon",
+    "summary": "Oven-baked salmon with herbs and lemon, light and tasty."
+  },
+  {
+    "id": 9,
+    "name": "Chickpea Curry",
+    "summary": "Spiced chickpeas simmered in tomato sauce with coconut milk."
+  },
+  {
+    "id": 10,
+    "name": "Greek Yogurt Parfait",
+    "summary": "Layers of yogurt, granola, and fresh fruits for breakfast."
+  },
+  {
+    "id": 11,
+    "name": "Stuffed Bell Peppers",
+    "summary": "Peppers filled with rice, beans, and herbs baked until tender."
+  },
+  {
+    "id": 12,
+    "name": "Tomato Basil Pasta",
+    "summary": "Simple pasta tossed with tomato, basil, garlic, and olive oil."
+  }
+]
