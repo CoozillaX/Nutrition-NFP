@@ -66,10 +66,12 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { useRouter } from "vue-router";
 
+const router = useRouter();
 const currentUser = ref(null);
-
 const auth = getAuth();
+
 let unsub;
 
 onMounted(() => {
@@ -83,6 +85,7 @@ onUnmounted(() => unsub && unsub());
 const handleLogout = async () => {
   try {
     await signOut(getAuth());
+    router.push("/");
   } catch (error) {}
 };
 </script>
