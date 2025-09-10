@@ -25,24 +25,64 @@
             <router-link class="nav-link" to="/recipes">Recipes</router-link>
           </li>
           <li class="nav-item">
-            <router-link class="nav-link" to="/planner"
-              >Planner</router-link
-            >
+            <router-link class="nav-link" to="/planner">Planner</router-link>
           </li>
-          <li class="nav-item">
+          <li v-if="!currentUser" class="nav-item">
             <router-link
               class="btn btn-outline-dark btn-sm mt-1 w-100"
               to="/login"
               >Login</router-link
             >
           </li>
-          <li class="nav-item">
+          <li v-if="!currentUser" class="nav-item">
             <router-link class="btn btn-dark btn-sm mt-1 w-100" to="/register"
               >Register</router-link
             >
+          </li>
+          <li v-else class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              {{ currentUser.displayName || currentUser.email }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="#" @click.prevent="handleLogout">
+                  Logout
+                </a>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>
     </div>
   </nav>
 </template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from "vue";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+
+const currentUser = ref(null);
+
+const auth = getAuth();
+let unsub;
+
+onMounted(() => {
+  unsub = onAuthStateChanged(auth, (user) => {
+    currentUser.value = user;
+  });
+});
+
+onUnmounted(() => unsub && unsub());
+
+const handleLogout = async () => {
+  try {
+    await signOut(getAuth());
+  } catch (error) {}
+};
+</script>

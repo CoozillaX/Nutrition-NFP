@@ -4,32 +4,6 @@
       <h3>Register</h3>
       <form class="pt-2" @submit.prevent="submitForm">
         <div class="mb-3">
-          <label for="inputUsername" class="form-label">Username</label>
-          <input
-            type="text"
-            class="form-control"
-            :class="
-              errors.username === null
-                ? ''
-                : errors.username
-                  ? 'is-invalid'
-                  : 'is-valid'
-            "
-            id="inputUsername"
-            aria-describedby="usernameHelp"
-            v-model="formData.username"
-            @input="() => validateName()"
-            @blur="() => validateName()"
-            required
-          />
-          <div class="invalid-feedback">
-            {{ errors.username }}
-          </div>
-          <div id="usernameHelp" class="form-text">
-            Everyone can see your user name.
-          </div>
-        </div>
-        <div class="mb-3">
           <label for="inputEmail" class="form-label">Email address</label>
           <input
             type="email"
@@ -81,7 +55,34 @@
             lowercase, a number, and a special character.
           </div>
         </div>
-        <button type="submit" class="btn btn-primary" @click="submitForm">Submit</button>
+        <div class="mb-3">
+          <label for="inputRepeatPassword" class="form-label"
+            >Repeat Password</label
+          >
+          <input
+            type="password"
+            class="form-control"
+            :class="
+              errors.repeatPassword === null
+                ? ''
+                : errors.repeatPassword
+                  ? 'is-invalid'
+                  : 'is-valid'
+            "
+            id="inputRepeatPassword"
+            v-model="formData.repeatPassword"
+            @input="() => validateRepeatPassword()"
+            @blur="() => validateRepeatPassword()"
+            required
+          />
+          <div class="invalid-feedback">
+            {{ errors.repeatPassword }}
+          </div>
+          <div id="repeatPasswordHelp" class="form-text">
+            Please re-enter your password for confirmation.
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
         <button type="button" class="btn btn-secondary ms-2" @click="clearForm">
           Clear
         </button>
@@ -92,49 +93,63 @@
 
 <script setup>
 import { ref } from "vue";
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const formData = ref({
-  username: "",
   email: "",
-  password: ""
+  password: "",
+  repeatPassword: ""
 });
 
 const submitForm = () => {
-  validateName();
   validateEmail();
   validatePassword();
-  if (!errors.value.username && !errors.value.email && !errors.value.password) {
-    alert(JSON.stringify(formData.value, null, 2));
-    clearForm();
+  validateRepeatPassword();
+  if (
+    !errors.value.email &&
+    !errors.value.password &&
+    !errors.value.repeatPassword
+  ) {
+    createUserWithEmailAndPassword(
+      getAuth(),
+      formData.value.email,
+      formData.value.password
+    )
+      .then((_) => {
+        alert("Registration successful!");
+        router.push("/");
+      })
+      .catch((error) => {
+        const errorMessage = error.message;
+        alert(errorMessage);
+      })
+      .finally(() => {
+        clearForm();
+      });
   }
 };
 
 const clearForm = () => {
   formData.value = {
-    username: "",
     email: "",
-    password: ""
+    password: "",
+    repeatPassword: ""
   };
   errors.value = {
-    username: null,
     email: null,
-    password: null
-  }
+    password: null,
+    repeatPassword: null
+  };
 };
 
 const errors = ref({
-  username: null,
   email: null,
-  password: null
+  password: null,
+  repeatPassword: null
 });
-
-const validateName = () => {
-  if (formData.value.username.length < 3) {
-    errors.value.username = "Name must be at least 3 characters";
-  } else {
-    errors.value.username = "";
-  }
-};
 
 const validateEmail = () => {
   const email = formData.value.email;
@@ -172,6 +187,17 @@ const validatePassword = () => {
       "Password must contain at least one special character.";
   } else {
     errors.value.password = "";
+  }
+};
+
+const validateRepeatPassword = () => {
+  const password = formData.value.password;
+  const repeatPassword = formData.value.repeatPassword;
+
+  if (repeatPassword !== password) {
+    errors.value.repeatPassword = "Passwords do not match.";
+  } else {
+    errors.value.repeatPassword = "";
   }
 };
 </script>
