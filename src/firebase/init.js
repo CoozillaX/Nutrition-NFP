@@ -1,7 +1,14 @@
 import { ref } from "vue";
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getStorage } from "firebase/storage";
+import {
+  getAuth,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDdosu4kT56ygIc79HYZdlQ3QHoryeBD3w",
@@ -17,17 +24,47 @@ initializeApp(firebaseConfig);
 const auth = getAuth();
 const currentUser = ref(null);
 const currentRole = ref(null);
+const db = getFirestore();
+const storage = getStorage();
 
 onAuthStateChanged(auth, async (user) => {
-  currentUser.value = user;
   if (!user) {
+    currentUser.value = null;
     currentRole.value = null;
     return;
   }
   const tokenResult = await user.getIdTokenResult(true);
+  currentUser.value = user;
   currentRole.value = tokenResult.claims.role;
 });
 
-const db = getFirestore();
+async function register(email, password) {
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err };
+  }
+}
 
-export { currentUser, currentRole, db };
+async function login(email, password) {
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err };
+  }
+}
+
+async function logout() {
+  try {
+    await signOut(auth);
+    currentUser.value = null;
+    currentRole.value = null;
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err };
+  }
+}
+
+export { currentUser, currentRole, db, storage, register, login, logout };

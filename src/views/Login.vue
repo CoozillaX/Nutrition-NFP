@@ -3,6 +3,7 @@
     <div class="pt-3 ms-2 col-md-6">
       <h3>Login</h3>
       <form class="pt-2" @submit.prevent="submitForm">
+        <!-- Email -->
         <div class="mb-3">
           <label for="inputEmail" class="form-label">Email address</label>
           <input
@@ -12,20 +13,19 @@
               errors.email === null
                 ? ''
                 : errors.email
-                  ? 'is-invalid'
-                  : 'is-valid'
+                ? 'is-invalid'
+                : 'is-valid'
             "
             id="inputEmail"
-            aria-describedby="emailHelp"
             v-model="formData.email"
-            @input="() => validateEmail()"
-            @blur="() => validateEmail()"
+            @input="validateEmail"
+            @blur="validateEmail"
             required
           />
-          <div class="invalid-feedback">
-            {{ errors.email }}
-          </div>
+          <div class="invalid-feedback">{{ errors.email }}</div>
         </div>
+
+        <!-- Password -->
         <div class="mb-3">
           <label for="inputPassword" class="form-label">Password</label>
           <input
@@ -35,21 +35,35 @@
               errors.password === null
                 ? ''
                 : errors.password
-                  ? 'is-invalid'
-                  : 'is-valid'
+                ? 'is-invalid'
+                : 'is-valid'
             "
             id="inputPassword"
             v-model="formData.password"
-            @input="() => validatePassword()"
-            @blur="() => validatePassword()"
+            @input="validatePassword"
+            @blur="validatePassword"
             required
           />
-          <div class="invalid-feedback">
-            {{ errors.password }}
-          </div>
+          <div class="invalid-feedback">{{ errors.password }}</div>
         </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
-        <button type="button" class="btn btn-secondary ms-2" @click="clearForm">
+
+        <!-- Actions -->
+        <button type="submit" class="btn btn-primary" :disabled="submitting">
+          <span
+            v-if="submitting"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          Submit
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-secondary ms-2"
+          :disabled="submitting"
+          @click="clearForm"
+        >
           Clear
         </button>
       </form>
@@ -59,55 +73,48 @@
 
 <script setup>
 import { ref } from "vue";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "vue-router";
+import { login } from "@/firebase/init";
 
 const router = useRouter();
 
 const formData = ref({
   email: "",
-  password: ""
+  password: "",
 });
 
-const submitForm = () => {
+const errors = ref({
+  email: null,
+  password: null,
+});
+
+const submitting = ref(false);
+
+const submitForm = async () => {
   validateEmail();
   validatePassword();
+
   if (!errors.value.email && !errors.value.password) {
-    signInWithEmailAndPassword(
-      getAuth(),
-      formData.value.email,
-      formData.value.password
-    )
-      .then((_) => {
-        alert("Login successful!");
-        router.push("/");
-      })
-      .catch((error) => {
-        const errorMessage = error.message;
-        alert(errorMessage);
-      })
-      .finally(() => {
-        clearForm();
-      });
+    submitting.value = true;
+    const res = await login(formData.value.email, formData.value.password);
+
+    if (res.success) {
+      alert("Login successful!");
+      router.push("/");
+      clearForm();
+    } else {
+      alert(res.error.message);
+    }
+    submitting.value = false;
   }
 };
 
 const clearForm = () => {
-  formData.value = {
-    email: "",
-    password: ""
-  };
-  errors.value = {
-    email: null,
-    password: null
-  };
+  formData.value = { email: "", password: "" };
+  errors.value = { email: null, password: null };
 };
 
-const errors = ref({
-  email: null,
-  password: null
-});
-
+// validators
 const validateEmail = () => {
   const email = formData.value.email;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -124,28 +131,10 @@ const validateEmail = () => {
 const validatePassword = () => {
   const password = formData.value.password;
   const minLength = 8;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasLowercase = /[a-z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
   if (password.length < minLength) {
     errors.value.password = `Password must be at least ${minLength} characters long.`;
-  } else if (!hasUppercase) {
-    errors.value.password =
-      "Password must contain at least one uppercase letter.";
-  } else if (!hasLowercase) {
-    errors.value.password =
-      "Password must contain at least one lowercase letter.";
-  } else if (!hasNumber) {
-    errors.value.password = "Password must contain at least one number.";
-  } else if (!hasSpecialChar) {
-    errors.value.password =
-      "Password must contain at least one special character.";
   } else {
     errors.value.password = "";
   }
 };
 </script>
-
-<style scoped></style>

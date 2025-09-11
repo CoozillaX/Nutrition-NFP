@@ -84,14 +84,16 @@
 
 <script setup>
 import { useRouter } from "vue-router";
-import { currentUser, currentRole } from "@/firebase/init";
+import { currentUser, currentRole, logout } from "@/firebase/init";
 
 const router = useRouter();
 
 const handleLogout = async () => {
-  try {
-    await signOut(getAuth());
+  const res = await logout();
+  if (res.success) {
     router.push("/");
-  } catch (error) {}
+  } else {
+    alert(res.error.message);
+  }
 };
 </script>
