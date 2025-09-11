@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar navbar-expand-sm navbar-light bg-light border-bottom">
+  <nav class="navbar navbar-expand-md navbar-light bg-light border-bottom">
     <div class="container-fluid">
       <router-link class="navbar-brand d-flex align-items-center" to="/">
         <img src="@/assets/imgs/logo.svg" alt="Nutrition NFP" height="40" />
@@ -26,6 +26,25 @@
           </li>
           <li class="nav-item">
             <router-link class="nav-link" to="/planner">Planner</router-link>
+          </li>
+          <li v-if="currentRole == 'admin'" class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              Management
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <router-link class="dropdown-item" to="/courses-manager">Courses</router-link>
+              </li>
+              <li>
+                <router-link class="dropdown-item" to="/recipes-manager">Recipes</router-link>
+              </li>
+            </ul>
           </li>
           <li v-if="!currentUser" class="nav-item">
             <router-link
@@ -64,23 +83,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
+import { currentUser, currentRole } from "@/firebase/init";
 
 const router = useRouter();
-const currentUser = ref(null);
-const auth = getAuth();
-
-let unsub;
-
-onMounted(() => {
-  unsub = onAuthStateChanged(auth, (user) => {
-    currentUser.value = user;
-  });
-});
-
-onUnmounted(() => unsub && unsub());
 
 const handleLogout = async () => {
   try {
