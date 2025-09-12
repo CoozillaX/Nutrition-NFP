@@ -229,8 +229,12 @@ async function submitForm() {
     submitting.value = true;
 
     let imageUrl = null;
+    let imagePath = null;
+
     if (formData.value.imageFile) {
-      imageUrl = await uploadImage(formData.value.imageFile);
+      const { url, path } = await uploadImage(formData.value.imageFile);
+      imageUrl = url;
+      imagePath = path;
     }
 
     await addDoc(collection(db, "recipes"), {
@@ -238,6 +242,7 @@ async function submitForm() {
       summary: formData.value.summary,
       details: formData.value.details,
       imageUrl,
+      imagePath,
       createdBy: currentUser.value?.uid || null,
       createdAt: serverTimestamp()
     });
