@@ -466,6 +466,8 @@ async function clearMyRating() {
 async function onDelete() {
   if (!selected?.value?.id) return;
   if (currentRole.value !== "admin") return;
+  if (!confirm("Are you sure to delete this recipe?")) return;
+
   try {
     if (selected.value.imagePath) {
       try {
