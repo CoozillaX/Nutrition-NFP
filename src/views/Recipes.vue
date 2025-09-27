@@ -172,8 +172,11 @@
             </div>
 
             <!-- My rating -->
-            <div class="border-top pt-3">
-              <div class="d-flex align-items-center justify-content-between">
+            <div class="border-top pt-2">
+              <div
+                v-if="currentUser"
+                class="d-flex align-items-center justify-content-between"
+              >
                 <div class="me-3">Your rating</div>
 
                 <div class="d-flex align-items-center">
@@ -193,23 +196,24 @@
                   </button>
 
                   <button
-                    v-if="currentUser && myRating"
+                    :disabled="ratingSaving || myRating === 0"
                     type="button"
-                    class="btn btn-sm btn-outline-secondary ms-2"
-                    :disabled="ratingSaving"
+                    class="btn btn-sm btn-outline-secondary ms-2 d-inline-flex align-items-center justify-content-center"
+                    style="width: 54px; height: 34px"
                     @click="clearMyRating"
                   >
-                    Clear
+                    <span
+                      v-if="ratingSaving"
+                      class="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    <span v-else>Clear</span>
                   </button>
                 </div>
               </div>
-
-              <div v-if="!currentUser" class="text-muted small mt-2">
+              <div v-else class="text-muted small mt-2">
                 Sign in to rate this recipe.
-              </div>
-
-              <div v-if="ratingSaving" class="text-muted small mt-2">
-                Saving...
               </div>
             </div>
           </div>
@@ -247,7 +251,10 @@ import {
   deleteDoc,
   where,
   setDoc,
-  serverTimestamp
+  serverTimestamp,
+  getAggregateFromServer,
+  count,
+  average
 } from "firebase/firestore";
 
 /* pagination */
@@ -272,6 +279,7 @@ async function fetchTotalCount() {
   const snap = await getCountFromServer(baseQuery());
   totalCount.value = snap.data().count || 0;
 }
+
 async function getCursorForPage(n) {
   if (n <= 1) return null;
   let cursor = null;
@@ -290,6 +298,7 @@ async function getCursorForPage(n) {
   }
   return cursor;
 }
+
 async function loadPage(n) {
   loading.value = true;
   try {
@@ -311,6 +320,7 @@ async function loadPage(n) {
     loading.value = false;
   }
 }
+
 const pageWindow = computed(() => {
   const maxBtns = 5;
   const pages = totalPages.value;
@@ -324,15 +334,18 @@ const pageWindow = computed(() => {
   }
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 });
+
 async function goPage(n) {
   await loadPage(n);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
 async function goPrev() {
   if (currentPage.value <= 1 || loading.value) return;
   await loadPage(currentPage.value - 1);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
 async function goNext() {
   if (currentPage.value >= totalPages.value || loading.value) return;
   await loadPage(currentPage.value + 1);
@@ -349,6 +362,7 @@ const ratingSaving = ref(false);
 const displayAvg = computed(() =>
   ratingCount.value ? ratingAvg.value.toFixed(1) : "0.0"
 );
+
 function avgStarClass(n) {
   const full = Math.floor(ratingAvg.value);
   const half = ratingAvg.value - full >= 0.5;
@@ -356,32 +370,26 @@ function avgStarClass(n) {
   if (n === full + 1 && half) return "bi-star-half text-warning";
   return "bi-star text-warning";
 }
+
 function myStarClass(n) {
   const active = hover.value ? hover.value >= n : myRating.value >= n;
   return active ? "bi-star-fill text-warning" : "bi-star text-warning";
 }
 
 async function loadRatingsFor(recipeId) {
-  ratingAvg.value = 0;
-  ratingCount.value = 0;
-  myRating.value = 0;
-
   // get all ratings for this recipe
   const qAll = query(
     collection(db, "ratings"),
     where("recipeId", "==", recipeId)
   );
-  const snap = await getDocs(qAll);
 
-  const values = [];
-  snap.forEach((d) => {
-    const v = Number(d.data().value || 0);
-    if (v > 0) values.push(v);
+  const snap = await getAggregateFromServer(qAll, {
+    avg: average("value"),
+    count: count()
   });
-  ratingCount.value = values.length;
-  ratingAvg.value = values.length
-    ? values.reduce((a, b) => a + b, 0) / values.length
-    : 0;
+
+  ratingCount.value = snap.data().count || 0;
+  ratingAvg.value = snap.data().avg || 0;
 
   // my own rating
   if (currentUser.value) {
@@ -401,9 +409,14 @@ async function loadRatingsFor(recipeId) {
 
 async function openRecipe(recipe) {
   selected.value = recipe;
+  // reset ratings
+  ratingAvg.value = 0;
+  ratingCount.value = 0;
+  myRating.value = 0;
   await loadRatingsFor(recipe.id);
   modal?.show();
 }
+
 function closeModal() {
   modal?.hide();
   hover.value = 0;
@@ -413,6 +426,7 @@ async function setMyRating(val) {
   if (!currentUser.value || !selected.value?.id) return;
   if (val < 1 || val > 5) return;
 
+  myRating.value = val;
   ratingSaving.value = true;
   const docId = `${selected.value.id}_${currentUser.value.uid}`;
   try {
@@ -436,6 +450,7 @@ async function clearMyRating() {
   if (!currentUser.value || !selected.value?.id) return;
   if (!myRating.value) return;
 
+  myRating.value = 0;
   ratingSaving.value = true;
   const docId = `${selected.value.id}_${currentUser.value.uid}`;
   try {
@@ -481,6 +496,7 @@ onMounted(async () => {
   if (totalCount.value > 0) await loadPage(1);
   else loading.value = false;
 });
+
 onBeforeUnmount(() => {
   modal?.dispose?.();
 });
