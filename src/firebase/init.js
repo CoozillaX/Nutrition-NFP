@@ -7,7 +7,8 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut
+  signOut,
+  sendEmailVerification
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -32,14 +33,13 @@ onAuthStateChanged(auth, async (user) => {
     currentRole.value = null;
     return;
   }
-  const tokenResult = await user.getIdTokenResult(true);
-  currentUser.value = user;
-  currentRole.value = tokenResult.claims.role;
 });
 
 async function register(email, password) {
   try {
     await createUserWithEmailAndPassword(auth, email, password);
+    currentUser.value = null;
+    currentRole.value = null;
     return { success: true };
   } catch (err) {
     return { success: false, error: err };
@@ -48,7 +48,16 @@ async function register(email, password) {
 
 async function login(email, password) {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const user = credential.user;
+    if (!user.emailVerified) {
+      await sendEmailVerification(user);
+      await signOut(auth);
+      return { success: false, error: { message: "Your need to verify your email address. A verification email has been sent to your email address." } };
+    }
+    const tokenResult = await user.getIdTokenResult(true);
+    currentUser.value = user;
+    currentRole.value = tokenResult.claims.role;
     return { success: true };
   } catch (err) {
     return { success: false, error: err };

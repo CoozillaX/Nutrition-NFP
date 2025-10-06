@@ -134,7 +134,7 @@ const submitForm = async () => {
     let res = await register(formData.value.email, formData.value.password);
     if (res.success) {
       alert("Registration successful!");
-      router.push("/");
+      router.push("/login");
       clearForm();
     } else {
       alert(res.error.message);
