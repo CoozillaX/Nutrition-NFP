@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helpers
+    // for create/update
+    function isOwnRatingCU(rid) {
+      return request.resource.data.recipeId is string
+        && request.resource.data.userId == request.auth.uid
+        && rid == (request.resource.data.recipeId + "_" + request.auth.uid);
+    }
+
+    // for delete
+    function isOwnRatingDel(rid) {
+      return resource.data.recipeId is string
+        && resource.data.userId == request.auth.uid
+        && rid == (resource.data.recipeId + "_" + request.auth.uid);
+    }
+
+    // only for create/update payload validation
+    function isValidRating(d) {
+      return d.recipeId is string
+        && d.userId is string
+        && d.value is number
+        && d.value >= 1
+        && d.value <= 5;
+    }
+
+    // Recipes
+    match /recipes/{recipeId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null
+        && request.auth.token.role == "admin";
+    }
+
+    // Ratings
+    match /ratings/{ratingId} {
+      allow read: if true;
+
+      allow create, update: if request.auth != null
+        && isValidRating(request.resource.data)
+        && isOwnRatingCU(ratingId);
+
+      allow delete: if request.auth != null
+        && (isOwnRatingDel(ratingId) || request.auth.token.role == "admin");
+    }
+
+    // default deny writes elsewhere
+    match /{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

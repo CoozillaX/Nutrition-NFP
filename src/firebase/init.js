@@ -19,12 +19,11 @@ const firebaseConfig = {
   appId: "1:369854823336:web:672b0ff3229b5a2c31bb9d"
 };
 
-initializeApp(firebaseConfig);
-
+const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const currentUser = ref(null);
 const currentRole = ref(null);
-const db = getFirestore();
+const db = getFirestore(app, "fit5032-assessments-database");
 const storage = getStorage();
 
 onAuthStateChanged(auth, async (user) => {

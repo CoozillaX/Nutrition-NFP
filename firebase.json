@@ -1,0 +1,11 @@
+{
+  "firestore": {
+    "database": "fit5032-assessments-database",
+    "location": "australia-southeast2",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}
