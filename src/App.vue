@@ -1,6 +1,7 @@
 <script setup>
 import Navibar from "@/components/Navibar.vue";
 import Footer from "@/components/Footer.vue";
+import Toast from 'primevue/toast'
 </script>
 
 <template>
@@ -10,6 +11,7 @@ import Footer from "@/components/Footer.vue";
       <router-view></router-view>
     </main>
     <Footer></Footer>
+    <Toast position="bottom-right"/>
   </div>
 </template>
 

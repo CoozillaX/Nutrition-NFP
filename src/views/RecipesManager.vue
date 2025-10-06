@@ -137,6 +137,9 @@ import { ref, computed } from "vue";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, currentUser } from "@/firebase/init";
 import { uploadImage } from "@/firebase/uploader";
+import { useToast } from "primevue/usetoast";
+
+const toast = useToast();
 
 const formData = ref({
   name: "",
@@ -247,10 +250,10 @@ async function submitForm() {
       createdAt: serverTimestamp()
     });
 
-    alert("Recipe added successfully!");
+    toast.add({severity:'success', summary: 'Success', detail: 'Recipe added successfully!', life: 3000});
     clearForm();
   } catch (err) {
-    alert(`Error: ${err.message}`);
+    toast.add({severity:'error', summary: 'Error', detail: `Error: ${err.message}`, life: 3000});
   } finally {
     submitting.value = false;
   }

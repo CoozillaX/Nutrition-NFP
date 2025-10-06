@@ -44,29 +44,23 @@
           :key="recipe.id"
           class="col-12 col-sm-6 col-md-4 col-lg-3 col-xxl-2 d-flex"
         >
-          <div class="card h-100 flex-fill text-start">
+          <div
+            class="card h-100 flex-fill text-start"
+            style="cursor: pointer"
+            @click="openRecipe(recipe)"
+          >
             <div class="ratio ratio-16x9">
               <img
                 v-if="recipe.imageUrl"
                 :src="recipe.imageUrl"
                 class="card-img-top"
                 alt="Recipe image"
-                style="object-fit: cover; cursor: pointer"
-                @click="openRecipe(recipe)"
+                style="object-fit: cover"
               />
-              <div
-                v-else
-                class="bg-secondary w-100 h-100"
-                style="cursor: pointer"
-                @click="openRecipe(recipe)"
-              ></div>
+              <div v-else class="bg-secondary w-100 h-100"></div>
             </div>
 
-            <div
-              class="card-body"
-              @click="openRecipe(recipe)"
-              style="cursor: pointer"
-            >
+            <div class="card-body">
               <h5 class="card-title mb-1">{{ recipe.name }}</h5>
               <p class="card-text text-muted mb-0">{{ recipe.summary }}</p>
             </div>
@@ -152,7 +146,7 @@
 
             <!-- Rating summary -->
             <div class="d-flex align-items-center mb-3">
-              <Rating v-model="ratingAvg" readonly/>
+              <Rating v-model="ratingAvg" readonly />
               <div class="small text-muted ms-2">
                 <span class="fw-semibold">{{ displayAvg }}</span>
                 ·
@@ -174,7 +168,11 @@
                 <div class="me-3">Your rating</div>
 
                 <div class="d-flex align-items-center">
-                  <Rating v-model="myRating" :disabled="ratingSaving" @update:modelValue="setMyRating"/>
+                  <Rating
+                    v-model="myRating"
+                    :disabled="ratingSaving"
+                    @update:modelValue="setMyRating"
+                  />
 
                   <button
                     :disabled="ratingSaving || myRating === 0"
@@ -218,6 +216,8 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import Modal from "bootstrap/js/dist/modal";
+import Rating from "primevue/rating";
+import { useToast } from "primevue";
 import { db, storage, currentRole, currentUser } from "@/firebase/init";
 import { ref as storageRef, deleteObject } from "firebase/storage";
 import {
@@ -237,7 +237,6 @@ import {
   count,
   average
 } from "firebase/firestore";
-import Rating from 'primevue/rating';
 
 /* pagination */
 const loading = ref(true);
@@ -256,6 +255,8 @@ const totalPages = computed(() =>
 
 const baseCol = collection(db, "recipes");
 const baseQuery = () => query(baseCol, orderBy("createdAt", "desc"));
+
+const toast = useToast()
 
 async function fetchTotalCount() {
   const snap = await getCountFromServer(baseQuery());
@@ -453,7 +454,7 @@ async function onDelete() {
     await loadPage(currentPage.value);
     closeModal();
   } catch {
-    alert("Delete failed.");
+    toast.add({severity:'error', summary: 'Error', detail: 'Delete failed.', life: 3000});
   }
 }
 

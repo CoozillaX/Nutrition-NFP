@@ -85,15 +85,18 @@
 <script setup>
 import { useRouter } from "vue-router";
 import { currentUser, currentRole, logout } from "@/firebase/init";
+import { useToast } from "primevue";
 
 const router = useRouter();
+const toast = useToast()
 
 const handleLogout = async () => {
   const res = await logout();
   if (res.success) {
+    toast.add({severity:'success', summary: 'Success', detail: 'Logout successful!', life: 3000});
     router.push("/");
   } else {
-    alert(res.error.message);
+    toast.add({severity:'error', summary: 'Error', detail: res.error.message, life: 3000});
   }
 };
 </script>

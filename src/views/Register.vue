@@ -107,8 +107,10 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { register } from "@/firebase/init";
+import { useToast } from "primevue";
 
 const router = useRouter();
+const toast = useToast();
 
 const formData = ref({
   email: "",
@@ -133,11 +135,11 @@ const submitForm = async () => {
     submitting.value = true;
     let res = await register(formData.value.email, formData.value.password);
     if (res.success) {
-      alert("Registration successful!");
+      toast.add({severity:'success', summary: 'Success', detail: 'Registration successful!', life: 3000});
       router.push("/login");
       clearForm();
     } else {
-      alert(res.error.message);
+      toast.add({severity:'error', summary: 'Error', detail: res.error.message, life: 3000});
     }
     submitting.value = false;
   }
