@@ -152,14 +152,8 @@
 
             <!-- Rating summary -->
             <div class="d-flex align-items-center mb-3">
-              <div class="me-3">
-                <i class="bi" :class="avgStarClass(1)"></i>
-                <i class="bi" :class="avgStarClass(2)"></i>
-                <i class="bi" :class="avgStarClass(3)"></i>
-                <i class="bi" :class="avgStarClass(4)"></i>
-                <i class="bi" :class="avgStarClass(5)"></i>
-              </div>
-              <div class="small text-muted">
+              <Rating v-model="ratingAvg" readonly/>
+              <div class="small text-muted ms-2">
                 <span class="fw-semibold">{{ displayAvg }}</span>
                 ·
                 <span>{{ ratingCount }}</span> ratings
@@ -180,26 +174,13 @@
                 <div class="me-3">Your rating</div>
 
                 <div class="d-flex align-items-center">
-                  <button
-                    v-for="n in 5"
-                    :key="n"
-                    type="button"
-                    class="btn btn-link p-0 me-1"
-                    :disabled="!currentUser"
-                    @click="setMyRating(n)"
-                    @mouseenter="hover = n"
-                    @mouseleave="hover = 0"
-                    aria-label="Rate {{ n }}"
-                    style="text-decoration: none"
-                  >
-                    <i class="bi fs-4" :class="myStarClass(n)"></i>
-                  </button>
+                  <Rating v-model="myRating" :disabled="ratingSaving" @update:modelValue="setMyRating"/>
 
                   <button
                     :disabled="ratingSaving || myRating === 0"
                     type="button"
                     class="btn btn-sm btn-outline-secondary ms-2 d-inline-flex align-items-center justify-content-center"
-                    style="width: 54px; height: 34px"
+                    style="width: 54px; height: 30px"
                     @click="clearMyRating"
                   >
                     <span
@@ -256,6 +237,7 @@ import {
   count,
   average
 } from "firebase/firestore";
+import Rating from 'primevue/rating';
 
 /* pagination */
 const loading = ref(true);
@@ -363,19 +345,6 @@ const displayAvg = computed(() =>
   ratingCount.value ? ratingAvg.value.toFixed(1) : "0.0"
 );
 
-function avgStarClass(n) {
-  const full = Math.floor(ratingAvg.value);
-  const half = ratingAvg.value - full >= 0.5;
-  if (n <= full) return "bi-star-fill text-warning";
-  if (n === full + 1 && half) return "bi-star-half text-warning";
-  return "bi-star text-warning";
-}
-
-function myStarClass(n) {
-  const active = hover.value ? hover.value >= n : myRating.value >= n;
-  return active ? "bi-star-fill text-warning" : "bi-star text-warning";
-}
-
 async function loadRatingsFor(recipeId) {
   // get all ratings for this recipe
   const qAll = query(
@@ -422,11 +391,7 @@ function closeModal() {
   hover.value = 0;
 }
 
-async function setMyRating(val) {
-  if (!currentUser.value || !selected.value?.id) return;
-  if (val < 1 || val > 5) return;
-
-  myRating.value = val;
+async function setMyRating() {
   ratingSaving.value = true;
   const docId = `${selected.value.id}_${currentUser.value.uid}`;
   try {
@@ -435,7 +400,7 @@ async function setMyRating(val) {
       {
         recipeId: selected.value.id,
         userId: currentUser.value.uid,
-        value: val,
+        value: myRating.value,
         updatedAt: serverTimestamp()
       },
       { merge: true }
