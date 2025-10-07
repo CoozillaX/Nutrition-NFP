@@ -28,10 +28,13 @@ const db = getFirestore(app, "fit5032-assessments-database");
 const storage = getStorage();
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
+  if (user && user.emailVerified) {
+    const tokenResult = await user.getIdTokenResult(true);
+    currentUser.value = user;
+    currentRole.value = tokenResult.claims.role;
+  } else {
     currentUser.value = null;
     currentRole.value = null;
-    return;
   }
 });
 
@@ -53,7 +56,13 @@ async function login(email, password) {
     if (!user.emailVerified) {
       await sendEmailVerification(user);
       await signOut(auth);
-      return { success: false, error: { message: "Your need to verify your email address. A verification email has been sent to your email address." } };
+      return {
+        success: false,
+        error: {
+          message:
+            "Your need to verify your email address. A verification email has been sent to your email address."
+        }
+      };
     }
     const tokenResult = await user.getIdTokenResult(true);
     currentUser.value = user;

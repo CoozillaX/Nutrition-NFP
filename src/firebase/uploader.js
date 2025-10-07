@@ -1,4 +1,4 @@
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from "@/firebase/init";
 
 async function uploadImage(file) {
@@ -13,4 +13,10 @@ async function uploadImage(file) {
   return { url, path };
 }
 
-export { uploadImage };
+async function deleteImage(path) {
+  if (!path) return;
+  const fileRef = storageRef(storage, path);
+  await deleteObject(fileRef);
+}
+
+export { uploadImage, deleteImage };

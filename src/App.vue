@@ -2,6 +2,7 @@
 import Navibar from "@/components/Navibar.vue";
 import Footer from "@/components/Footer.vue";
 import Toast from 'primevue/toast'
+import ConfirmPopup from 'primevue/confirmpopup'
 </script>
 
 <template>
@@ -12,6 +13,7 @@ import Toast from 'primevue/toast'
     </main>
     <Footer></Footer>
     <Toast position="bottom-right"/>
+    <ConfirmPopup></ConfirmPopup>
   </div>
 </template>
 
