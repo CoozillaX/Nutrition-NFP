@@ -198,13 +198,6 @@
           </div>
 
           <div class="modal-footer">
-            <button
-              v-if="currentRole === 'admin'"
-              class="btn btn-danger"
-              @click="onDelete()"
-            >
-              Delete
-            </button>
             <button class="btn btn-dark" @click="closeModal">Close</button>
           </div>
         </div>
@@ -217,9 +210,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import Modal from "bootstrap/js/dist/modal";
 import Rating from "primevue/rating";
-import { useToast } from "primevue";
-import { db, storage, currentRole, currentUser } from "@/firebase/init";
-import { ref as storageRef, deleteObject } from "firebase/storage";
+import { db, currentUser } from "@/firebase/init";
 import {
   collection,
   query,
@@ -255,8 +246,6 @@ const totalPages = computed(() =>
 
 const baseCol = collection(db, "recipes");
 const baseQuery = () => query(baseCol, orderBy("createdAt", "desc"));
-
-const toast = useToast()
 
 async function fetchTotalCount() {
   const snap = await getCountFromServer(baseQuery());
@@ -425,36 +414,6 @@ async function clearMyRating() {
     await loadRatingsFor(selected.value.id);
   } finally {
     ratingSaving.value = false;
-  }
-}
-
-/* delete */
-async function onDelete() {
-  if (!selected?.value?.id) return;
-  if (currentRole.value !== "admin") return;
-  if (!confirm("Are you sure to delete this recipe?")) return;
-
-  try {
-    if (selected.value.imagePath) {
-      try {
-        const fileRef = storageRef(storage, selected.value.imagePath);
-        await deleteObject(fileRef);
-      } catch {}
-    }
-    await deleteDoc(doc(db, "recipes", selected.value.id));
-
-    const qAll = query(
-      collection(db, "ratings"),
-      where("recipeId", "==", selected.value.id)
-    );
-    const snap = await getDocs(qAll);
-    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-
-    await fetchTotalCount();
-    await loadPage(currentPage.value);
-    closeModal();
-  } catch {
-    toast.add({severity:'error', summary: 'Error', detail: 'Delete failed.', life: 3000});
   }
 }
 
