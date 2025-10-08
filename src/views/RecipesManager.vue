@@ -1,10 +1,10 @@
 <template>
   <!-- Recipes DataTable -->
   <DataTable
-    ref="dataTableRef"
     tableStyle="min-width: 50rem"
     lazy
     paginator
+    :first="first"
     :value="recipesData"
     :rows="rowsPerPage"
     :totalRecords="totalRecords"
@@ -50,7 +50,7 @@
           rounded
           severity="success"
           @click="() => openModal(slotProps.data)"
-        />
+        ></Button>
         <Button
           type="button"
           icon="pi pi-trash"
@@ -58,7 +58,7 @@
           severity="danger"
           class="ms-2"
           @click="(event) => confirmDeleteRecipe(event, slotProps.data)"
-        />
+        ></Button>
       </template>
     </Column>
   </DataTable>
@@ -158,7 +158,7 @@
               "
               :disabled="submitting"
               size="small"
-            />
+            ></Button>
           </div>
         </div>
 
@@ -252,7 +252,7 @@ const initialValues = reactive({
   imageUrl: ""
 });
 
-const dataTableRef = ref(null);
+const first = ref(0);
 const recipesData = ref([]);
 const totalRecords = ref(0);
 const loading = ref(false);
@@ -263,8 +263,9 @@ let cursors = [];
 
 async function reloadDataTable() {
   cursors = [];
+  first.value = 1;
   totalRecords.value = 0;
-  await onRecipeLazyLoad({ first: 0, rows: rowsPerPage });
+  await onRecipeLazyLoad();
 }
 
 async function getCursorForPage(targetPage, recipesCol, order, rows) {
@@ -308,8 +309,7 @@ async function getCursorForPage(targetPage, recipesCol, order, rows) {
 const onRecipeLazyLoad = async (event) => {
   loading.value = true;
   try {
-    const { first, rows } = event;
-    const page = Math.floor(first / rows);
+    const { page = 0, rows = rowsPerPage } = event?.originalEvent || {};
 
     const recipesCol = collection(db, "recipes");
     const order = orderBy("createdAt", "desc");
