@@ -209,7 +209,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import Modal from "bootstrap/js/dist/modal";
-import Rating from "primevue/rating";
 import { db, currentUser } from "@/firebase/init";
 import {
   collection,
