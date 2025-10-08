@@ -28,9 +28,7 @@
       </div>
     </template>
     <template #empty>
-      <div class="text-center">
-        No recipes found
-      </div>
+      <div class="text-center">No recipes found</div>
     </template>
     <template #loading> Loading data... </template>
     <Column header="Image">
@@ -62,7 +60,7 @@
         />
       </template>
     </Column>
-    
+
     <Column
       field="summary"
       header="Summary"
@@ -137,7 +135,7 @@
       v-slot="$form"
       :initialValues="initialValues"
       :resolver="formResolver"
-      @submit="updateRecipe"
+      @submit="onDialogSubmit"
     >
       <!-- Hidden attributes -->
       <InputText name="id" type="hidden" />
@@ -254,28 +252,17 @@
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-
-import { db, currentUser } from "@/firebase/init";
-import { uploadImage, deleteImage } from "@/firebase/uploader";
-import {
-  addDoc,
-  collection,
-  query,
-  orderBy,
-  limit,
-  startAfter,
-  getDocs,
-  getCountFromServer,
-  doc,
-  deleteDoc,
-  where,
-  setDoc,
-  serverTimestamp
-} from "firebase/firestore";
-
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { FilterMatchMode } from "@primevue/core/api";
+import { getCountFromServer } from "firebase/firestore";
+import {
+  generateRecipesQueryByFilters,
+  getRecipesByPage,
+  addRecipe,
+  updateRecipe,
+  deleteRecipe
+} from "@/firestore/recipes";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -315,7 +302,7 @@ const loading = ref(false);
 
 const rowsPerPage = 10;
 
-let currQuery = query(collection(db, "recipes"));
+let currQuery = generateRecipesQueryByFilters(null);
 let cursors = [];
 
 async function reloadDataTable() {
@@ -325,83 +312,11 @@ async function reloadDataTable() {
   await onRecipeLazyLoad();
 }
 
-async function getCursorForPage(targetPage, recipesCol, rows) {
-  // If we already have the cursor for the target page, return it
-  if (cursors[targetPage - 1]) return cursors[targetPage - 1];
-
-  // Find the last known cursor before the target page
-  let lastKnownPage = -1;
-  for (let i = targetPage - 1; i >= 0; i--) {
-    if (cursors[i]) {
-      lastKnownPage = i;
-      break;
-    }
-  }
-
-  // Start querying from the last known cursor
-  let q = query(recipesCol, limit(rows));
-  let snap;
-
-  if (lastKnownPage >= 0) {
-    q = query(
-      recipesCol,
-      startAfter(cursors[lastKnownPage]),
-      limit(rows)
-    );
-  }
-
-  // Fetch pages until we reach the target page
-  for (let i = lastKnownPage + 1; i < targetPage; i++) {
-    snap = await getDocs(q);
-    if (snap.empty) return null;
-    cursors[i] = snap.docs[snap.docs.length - 1];
-
-    q = query(recipesCol, startAfter(cursors[i]), limit(rows));
-  }
-
-  return cursors[targetPage - 1];
-}
-
 const onRecipeFilter = (event) => {
-  let newQuery = query(collection(db, "recipes"), orderBy("createdAt"))
-
   const { filters } = event || {};
   if (filters) {
-    // CreatedAt filter
-    const { value: dateValue, matchMode: dateMode } = filters.createdAt || {};
-    if ((dateValue?.length || 0) == 2){
-      if (!dateValue[0] || !dateValue[1]) return; // Selecting, keep the query as is
-        switch (dateMode) {
-          case FilterMatchMode.BETWEEN:
-            const startDate = new Date(dateValue[0]);
-            startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(dateValue[1]);
-            endDate.setHours(23, 59, 59, 999);
-            newQuery = query(
-              newQuery,
-              where("createdAt", ">=", startDate),
-              where("createdAt", "<=", endDate)
-            );
-        }
-    }
-    // Name filter
-    const { value: nameValue, matchMode: nameMode } = filters.name || {};
-    if (nameValue) {
-      switch (nameMode) {
-        case FilterMatchMode.EQUALS:
-          newQuery = query(newQuery, where("name", "==", nameValue), orderBy("name"));
-          break;
-      }
-    }
-    // Summary filter
-    const { value: summaryValue, matchMode: summaryMode } = filters.summary || {};
-    if (summaryValue) {
-      switch (summaryMode) {
-        case FilterMatchMode.EQUALS:
-          newQuery = query(newQuery, where("summary", "==", summaryValue), orderBy("summary"));
-          break;
-      }
-    }
+    const newQuery = generateRecipesQueryByFilters(filters);
+    if (!newQuery) return; // Invalid state, do nothing
     currQuery = newQuery;
     reloadDataTable();
   }
@@ -418,18 +333,16 @@ const onRecipeLazyLoad = async (event) => {
       totalRecords.value = snapCount.data().count || 0;
     }
 
-    // Fetch page data
-    const cursor = await getCursorForPage(page, currQuery, rows);
+    // Fetch data for the current page
+    const { data, cursors: newCursors } = await getRecipesByPage(
+      page,
+      currQuery,
+      rows,
+      cursors
+    );
 
-    let q = query(currQuery, limit(rows));
-    if (cursor) q = query(currQuery, startAfter(cursor), limit(rows));
-
-    const snap = await getDocs(q);
-    recipesData.value = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-    if (snap.docs.length > 0) {
-      cursors[page] = snap.docs[snap.docs.length - 1];
-    }
+    recipesData.value = data;
+    cursors = newCursors;
   } catch (error) {
     toast.add({
       severity: "error",
@@ -496,51 +409,33 @@ function onFileSelect(e) {
   if (file) imageData.value = file;
 }
 
-async function updateRecipe({ valid, values }) {
+async function onDialogSubmit({ valid, values }) {
   if (!valid || !values) return;
   try {
     submitting.value = true;
 
-    let { imageUrl, imagePath } = values;
-
-    // Delete old image if removed
-    if (!imageUrl && imagePath) {
-      try {
-        deleteImage(imagePath);
-      } catch {}
-      imagePath = "";
-    }
-
-    // Upload new image if selected
-    if (imageData.value) {
-      const { url, path } = await uploadImage(imageData.value);
-      imageUrl = url;
-      imagePath = path;
-    }
-
     // Create or update recipe
     if (values.id) {
-      await setDoc(
-        doc(db, "recipes", values.id),
+      await updateRecipe(
         {
+          id: values.id,
           name: values.name,
           summary: values.summary,
           details: values.details,
-          imageUrl,
-          imagePath
+          imagePath: values.imagePath,
+          imageUrl: values.imageUrl
         },
-        { merge: true }
+        imageData.value
       );
     } else {
-      await addDoc(collection(db, "recipes"), {
-        name: values.name,
-        summary: values.summary,
-        details: values.details,
-        imageUrl,
-        imagePath,
-        createdBy: currentUser.value?.uid || null,
-        createdAt: serverTimestamp()
-      });
+      await addRecipe(
+        {
+          name: values.name,
+          summary: values.summary,
+          details: values.details
+        },
+        imageData.value
+      );
     }
 
     modalVisible.value = false;
@@ -568,21 +463,9 @@ async function updateRecipe({ valid, values }) {
 async function confirmDeleteRecipe(event, recipe) {
   if (!recipe || !recipe.id) return;
   // Function to delete recipe
-  const deleteRecipe = async (recipe) => {
+  const deleteFunc = async (recipe) => {
     try {
-      if (recipe.imagePath) {
-        try {
-          deleteImage(recipe.imagePath);
-        } catch {}
-      }
-      await deleteDoc(doc(db, "recipes", recipe.id));
-
-      const qAll = query(
-        collection(db, "ratings"),
-        where("recipeId", "==", recipe.id)
-      );
-      const snap = await getDocs(qAll);
-      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      await deleteRecipe(recipe);
 
       toast.add({
         severity: "success",
@@ -616,13 +499,13 @@ async function confirmDeleteRecipe(event, recipe) {
       severity: "danger"
     },
     accept: () => {
-      deleteRecipe(recipe);
+      deleteFunc(recipe);
     }
   });
 }
 
 onMounted(() => {
-  onRecipeLazyLoad({ first: 0, rows: rowsPerPage });
+  onRecipeLazyLoad(null);
 });
 </script>
 

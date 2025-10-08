@@ -16,7 +16,7 @@ async function uploadImage(file) {
 async function deleteImage(path) {
   if (!path) return;
   const fileRef = storageRef(storage, path);
-  await deleteObject(fileRef);
+  return deleteObject(fileRef);
 }
 
 export { uploadImage, deleteImage };

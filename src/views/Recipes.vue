@@ -72,11 +72,11 @@
       <div class="container-fluid pt-5 mt-auto" v-if="totalPages > 1">
         <nav aria-label="Recipes pagination">
           <ul class="pagination justify-content-center mb-0">
-            <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <li class="page-item" :class="{ disabled: currentPage === 0 }">
               <button
                 class="page-link"
                 @click="goPrev"
-                :disabled="currentPage === 1"
+                :disabled="currentPage === 0"
               >
                 Previous
               </button>
@@ -86,19 +86,19 @@
               v-for="n in pageWindow"
               :key="n"
               class="page-item"
-              :class="{ active: n === currentPage }"
+              :class="{ active: n === currentPage + 1 }"
             >
               <button class="page-link" @click="goPage(n)">{{ n }}</button>
             </li>
 
             <li
               class="page-item"
-              :class="{ disabled: currentPage === totalPages }"
+              :class="{ disabled: currentPage === totalPages - 1 }"
             >
               <button
                 class="page-link"
                 @click="goNext"
-                :disabled="currentPage === totalPages"
+                :disabled="currentPage === totalPages - 1"
               >
                 Next
               </button>
@@ -198,7 +198,9 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn-dark" @click="closeRecipeModal">Close</button>
+            <button class="btn btn-dark" @click="closeRecipeModal">
+              Close
+            </button>
           </div>
         </div>
       </div>
@@ -209,16 +211,12 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import Modal from "bootstrap/js/dist/modal";
-import { db, currentUser } from "@/firebase/init";
+import { currentUser } from "@/firebase/init";
+import { getCountFromServer } from "firebase/firestore";
 import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  startAfter,
-  getDocs,
-  getCountFromServer
-} from "firebase/firestore";
+  generateRecipesQueryByFilters,
+  getRecipesByPage
+} from "@/firestore/recipes";
 import { getRating, setRating, clearRating } from "@/firestore/ratings";
 
 /* pagination */
@@ -229,57 +227,38 @@ const modalEl = ref(null);
 let modal = null;
 const selected = ref(null);
 
-const currentPage = ref(1);
+const currentPage = ref(0);
 const pageSize = 12;
 const totalCount = ref(0);
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(totalCount.value / pageSize))
 );
 
-const baseCol = collection(db, "recipes");
-const baseQuery = () => query(baseCol, orderBy("createdAt", "desc"));
+let currQuery = generateRecipesQueryByFilters(null);
+let cursors = [];
 
 async function fetchTotalCount() {
-  const snap = await getCountFromServer(baseQuery());
+  const snap = await getCountFromServer(currQuery);
   totalCount.value = snap.data().count || 0;
-}
-
-async function getCursorForPage(n) {
-  if (n <= 1) return null;
-  let cursor = null;
-  for (let i = 0; i < n - 1; i++) {
-    let q = query(baseCol, orderBy("createdAt", "desc"), limit(pageSize));
-    if (cursor)
-      q = query(
-        baseCol,
-        orderBy("createdAt", "desc"),
-        startAfter(cursor),
-        limit(pageSize)
-      );
-    const snap = await getDocs(q);
-    if (snap.empty) return null;
-    cursor = snap.docs[snap.docs.length - 1];
-  }
-  return cursor;
 }
 
 async function loadPage(n) {
   loading.value = true;
   try {
     const pages = Math.max(1, Math.ceil(totalCount.value / pageSize));
-    const target = Math.min(Math.max(1, n), pages);
-    const cursor = await getCursorForPage(target);
-    let q = query(baseCol, orderBy("createdAt", "desc"), limit(pageSize));
-    if (cursor)
-      q = query(
-        baseCol,
-        orderBy("createdAt", "desc"),
-        startAfter(cursor),
-        limit(pageSize)
-      );
-    const snap = await getDocs(q);
-    paginatedRecipes.value = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    currentPage.value = target;
+    const page = Math.min(Math.max(0, n), pages);
+
+    // Fetch data for the current page
+    const { data, cursors: newCursors } = await getRecipesByPage(
+      page,
+      currQuery,
+      pageSize,
+      cursors
+    );
+
+    cursors = newCursors;
+    paginatedRecipes.value = data;
+    currentPage.value = page;
   } finally {
     loading.value = false;
   }
@@ -300,12 +279,12 @@ const pageWindow = computed(() => {
 });
 
 async function goPage(n) {
-  await loadPage(n);
+  await loadPage(n - 1);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function goPrev() {
-  if (currentPage.value <= 1 || loading.value) return;
+  if (currentPage.value <= 0 || loading.value) return;
   await loadPage(currentPage.value - 1);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -378,7 +357,7 @@ async function clearMyRating() {
 onMounted(async () => {
   modal = new Modal(modalEl.value);
   await fetchTotalCount();
-  if (totalCount.value > 0) await loadPage(1);
+  if (totalCount.value > 0) await loadPage(0);
   else loading.value = false;
 });
 
