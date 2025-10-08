@@ -47,7 +47,7 @@
           <div
             class="card h-100 flex-fill text-start"
             style="cursor: pointer"
-            @click="openRecipe(recipe)"
+            @click="openRecipeModal(recipe)"
           >
             <div class="ratio ratio-16x9">
               <img
@@ -125,7 +125,7 @@
             <button
               type="button"
               class="btn-close"
-              @click="closeModal"
+              @click="closeRecipeModal"
               aria-label="Close"
             ></button>
           </div>
@@ -198,7 +198,7 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn-dark" @click="closeModal">Close</button>
+            <button class="btn btn-dark" @click="closeRecipeModal">Close</button>
           </div>
         </div>
       </div>
@@ -217,16 +217,9 @@ import {
   limit,
   startAfter,
   getDocs,
-  getCountFromServer,
-  doc,
-  deleteDoc,
-  where,
-  setDoc,
-  serverTimestamp,
-  getAggregateFromServer,
-  count,
-  average
+  getCountFromServer
 } from "firebase/firestore";
+import { getRating, setRating, clearRating } from "@/firestore/ratings";
 
 /* pagination */
 const loading = ref(true);
@@ -323,78 +316,46 @@ async function goNext() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-/* ratings */
+/* modal */
 const ratingAvg = ref(0);
 const ratingCount = ref(0);
 const myRating = ref(0);
 const hover = ref(0);
+
+async function openRecipeModal(recipe) {
+  selected.value = recipe;
+  // reset ratings
+  ratingAvg.value = 0;
+  ratingCount.value = 0;
+  myRating.value = 0;
+  await loadRating(recipe.id);
+  modal?.show();
+}
+
+function closeRecipeModal() {
+  modal?.hide();
+  hover.value = 0;
+}
+
+/* ratings */
 const ratingSaving = ref(false);
 
 const displayAvg = computed(() =>
   ratingCount.value ? ratingAvg.value.toFixed(1) : "0.0"
 );
 
-async function loadRatingsFor(recipeId) {
-  // get all ratings for this recipe
-  const qAll = query(
-    collection(db, "ratings"),
-    where("recipeId", "==", recipeId)
-  );
-
-  const snap = await getAggregateFromServer(qAll, {
-    avg: average("value"),
-    count: count()
-  });
-
-  ratingCount.value = snap.data().count || 0;
-  ratingAvg.value = snap.data().avg || 0;
-
-  // my own rating
-  if (currentUser.value) {
-    const qMine = query(
-      collection(db, "ratings"),
-      where("recipeId", "==", recipeId),
-      where("userId", "==", currentUser.value.uid),
-      limit(1)
-    );
-    const mineSnap = await getDocs(qMine);
-    if (!mineSnap.empty) {
-      const val = Number(mineSnap.docs[0].data().value || 0);
-      myRating.value = val;
-    }
-  }
-}
-
-async function openRecipe(recipe) {
-  selected.value = recipe;
-  // reset ratings
-  ratingAvg.value = 0;
-  ratingCount.value = 0;
-  myRating.value = 0;
-  await loadRatingsFor(recipe.id);
-  modal?.show();
-}
-
-function closeModal() {
-  modal?.hide();
-  hover.value = 0;
+async function loadRating(recipeId) {
+  const { count, avg, myRating: myR } = await getRating(recipeId);
+  ratingCount.value = count;
+  ratingAvg.value = avg;
+  myRating.value = myR;
 }
 
 async function setMyRating() {
   ratingSaving.value = true;
-  const docId = `${selected.value.id}_${currentUser.value.uid}`;
   try {
-    await setDoc(
-      doc(db, "ratings", docId),
-      {
-        recipeId: selected.value.id,
-        userId: currentUser.value.uid,
-        value: myRating.value,
-        updatedAt: serverTimestamp()
-      },
-      { merge: true }
-    );
-    await loadRatingsFor(selected.value.id);
+    await setRating(selected.value.id, myRating.value);
+    await loadRating(selected.value.id);
   } finally {
     ratingSaving.value = false;
   }
@@ -406,11 +367,9 @@ async function clearMyRating() {
 
   myRating.value = 0;
   ratingSaving.value = true;
-  const docId = `${selected.value.id}_${currentUser.value.uid}`;
   try {
-    // remove my rating document entirely
-    await deleteDoc(doc(db, "ratings", docId));
-    await loadRatingsFor(selected.value.id);
+    await clearRating(selected.value.id);
+    await loadRating(selected.value.id);
   } finally {
     ratingSaving.value = false;
   }
