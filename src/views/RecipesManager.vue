@@ -4,12 +4,15 @@
     tableStyle="min-width: 50rem"
     lazy
     paginator
+    filterDisplay="row"
     :first="first"
     :value="recipesData"
     :rows="rowsPerPage"
     :totalRecords="totalRecords"
     :loading="loading"
+    :filters="filters"
     @page="onRecipeLazyLoad"
+    @filter="onRecipeFilter"
   >
     <template #header>
       <div
@@ -24,7 +27,12 @@
         ></Button>
       </div>
     </template>
-    <Column field="name" header="Name"></Column>
+    <template #empty>
+      <div class="text-center">
+        No recipes found
+      </div>
+    </template>
+    <template #loading> Loading data... </template>
     <Column header="Image">
       <template #body="slotProps">
         <Image
@@ -36,10 +44,64 @@
         ></Image>
       </template>
     </Column>
-    <Column field="summary" header="Summary"></Column>
-    <Column field="createdAt" header="Created At">
+    <Column
+      field="name"
+      header="Name"
+      :showFilterMenu="true"
+      :filterMatchModeOptions="[
+        { label: 'Equals', value: FilterMatchMode.EQUALS }
+      ]"
+    >
+      <template #filter="{ filterModel, filterCallback }">
+        <InputText
+          v-model="filterModel.value"
+          type="text"
+          @blur="filterCallback()"
+          placeholder="Filter by name"
+          fluid
+        />
+      </template>
+    </Column>
+    
+    <Column
+      field="summary"
+      header="Summary"
+      :showFilterMenu="true"
+      :filterMatchModeOptions="[
+        { label: 'Equals', value: FilterMatchMode.EQUALS }
+      ]"
+    >
+      <template #filter="{ filterModel, filterCallback }">
+        <InputText
+          v-model="filterModel.value"
+          type="text"
+          @blur="filterCallback()"
+          placeholder="Filter by summary"
+          fluid
+        />
+      </template>
+    </Column>
+    <Column
+      field="createdAt"
+      header="Created At"
+      :showFilterMenu="true"
+      :filterMatchModeOptions="[
+        { label: 'Between', value: FilterMatchMode.BETWEEN }
+      ]"
+    >
       <template #body="slotProps">
         {{ formatDate(slotProps.data.createdAt) }}
+      </template>
+      <template #filter="{ filterModel, filterCallback }">
+        <DatePicker
+          v-model="filterModel.value"
+          selection-mode="range"
+          date-format="yy-mm-dd"
+          @date-select="filterCallback()"
+          placeholder="Filter by date"
+          :show-icon="true"
+          fluid
+        />
       </template>
     </Column>
     <Column style="width: 10rem">
@@ -208,10 +270,7 @@ import {
   deleteDoc,
   where,
   setDoc,
-  serverTimestamp,
-  getAggregateFromServer,
-  count,
-  average
+  serverTimestamp
 } from "firebase/firestore";
 
 import { useToast } from "primevue/usetoast";
@@ -226,6 +285,8 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import { useConfirm } from "primevue/useconfirm";
 import Image from "primevue/image";
+import { FilterMatchMode } from "@primevue/core/api";
+import DatePicker from 'primevue/datepicker';
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -252,6 +313,12 @@ const initialValues = reactive({
   imageUrl: ""
 });
 
+const filters = ref({
+  name: { value: null, matchMode: FilterMatchMode.EQUALS },
+  summary: { value: null, matchMode: FilterMatchMode.EQUALS },
+  createdAt: { value: null, matchMode: FilterMatchMode.BETWEEN }
+});
+
 const first = ref(0);
 const recipesData = ref([]);
 const totalRecords = ref(0);
@@ -259,6 +326,7 @@ const loading = ref(false);
 
 const rowsPerPage = 10;
 
+let currQuery = query(collection(db, "recipes"));
 let cursors = [];
 
 async function reloadDataTable() {
@@ -268,7 +336,7 @@ async function reloadDataTable() {
   await onRecipeLazyLoad();
 }
 
-async function getCursorForPage(targetPage, recipesCol, order, rows) {
+async function getCursorForPage(targetPage, recipesCol, rows) {
   // If we already have the cursor for the target page, return it
   if (cursors[targetPage - 1]) return cursors[targetPage - 1];
 
@@ -282,13 +350,12 @@ async function getCursorForPage(targetPage, recipesCol, order, rows) {
   }
 
   // Start querying from the last known cursor
-  let q = query(recipesCol, order, limit(rows));
+  let q = query(recipesCol, limit(rows));
   let snap;
 
   if (lastKnownPage >= 0) {
     q = query(
       recipesCol,
-      order,
       startAfter(cursors[lastKnownPage]),
       limit(rows)
     );
@@ -300,31 +367,73 @@ async function getCursorForPage(targetPage, recipesCol, order, rows) {
     if (snap.empty) return null;
     cursors[i] = snap.docs[snap.docs.length - 1];
 
-    q = query(recipesCol, order, startAfter(cursors[i]), limit(rows));
+    q = query(recipesCol, startAfter(cursors[i]), limit(rows));
   }
 
   return cursors[targetPage - 1];
 }
+
+const onRecipeFilter = (event) => {
+  let newQuery = query(collection(db, "recipes"), orderBy("createdAt"))
+
+  const { filters } = event || {};
+  if (filters) {
+    // CreatedAt filter
+    const { value: dateValue, matchMode: dateMode } = filters.createdAt || {};
+    if ((dateValue?.length || 0) == 2){
+      if (!dateValue[0] || !dateValue[1]) return; // Selecting, keep the query as is
+        switch (dateMode) {
+          case FilterMatchMode.BETWEEN:
+            const startDate = new Date(dateValue[0]);
+            startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(dateValue[1]);
+            endDate.setHours(23, 59, 59, 999);
+            newQuery = query(
+              newQuery,
+              where("createdAt", ">=", startDate),
+              where("createdAt", "<=", endDate)
+            );
+        }
+    }
+    // Name filter
+    const { value: nameValue, matchMode: nameMode } = filters.name || {};
+    if (nameValue) {
+      switch (nameMode) {
+        case FilterMatchMode.EQUALS:
+          newQuery = query(newQuery, where("name", "==", nameValue), orderBy("name"));
+          break;
+      }
+    }
+    // Summary filter
+    const { value: summaryValue, matchMode: summaryMode } = filters.summary || {};
+    if (summaryValue) {
+      switch (summaryMode) {
+        case FilterMatchMode.EQUALS:
+          newQuery = query(newQuery, where("summary", "==", summaryValue), orderBy("summary"));
+          break;
+      }
+    }
+    currQuery = newQuery;
+    reloadDataTable();
+  }
+};
 
 const onRecipeLazyLoad = async (event) => {
   loading.value = true;
   try {
     const { page = 0, rows = rowsPerPage } = event?.originalEvent || {};
 
-    const recipesCol = collection(db, "recipes");
-    const order = orderBy("createdAt", "desc");
-
     // Fetch total count only once
     if (page === 0 && totalRecords.value === 0) {
-      const snapCount = await getCountFromServer(query(recipesCol));
+      const snapCount = await getCountFromServer(currQuery);
       totalRecords.value = snapCount.data().count || 0;
     }
 
     // Fetch page data
-    const cursor = await getCursorForPage(page, recipesCol, order, rows);
+    const cursor = await getCursorForPage(page, currQuery, rows);
 
-    let q = query(recipesCol, order, limit(rows));
-    if (cursor) q = query(recipesCol, order, startAfter(cursor), limit(rows));
+    let q = query(currQuery, limit(rows));
+    if (cursor) q = query(currQuery, startAfter(cursor), limit(rows));
 
     const snap = await getDocs(q);
     recipesData.value = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
