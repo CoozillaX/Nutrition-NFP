@@ -1,5 +1,5 @@
 <template>
-  <section class="container-fluid bg-light min-vh-100 row">
+  <section class="container-fluid min-vh-100 row">
     <div class="pt-3 ms-2 col-md-6">
       <h3>Register</h3>
       <form class="pt-2" @submit.prevent="submitForm">

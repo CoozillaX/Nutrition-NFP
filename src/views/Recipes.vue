@@ -1,5 +1,5 @@
 <template>
-  <section class="bg-light d-flex flex-column min-vh-100">
+  <section class="d-flex flex-column min-vh-100">
     <!-- SearchBar -->
     <div id="searchBar" class="container-fluid text-center py-5">
       <h1 class="display-5 fw-bold pt-5">Recipes</h1>

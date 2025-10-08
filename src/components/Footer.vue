@@ -1,5 +1,5 @@
 <template>
-  <footer class="border-top py-4 bg-white">
+  <footer class="border-top py-4">
     <div class="container-fluid d-flex justify-content-between flex-wrap">
       <div>
         <div class="fw-bold mb-2">

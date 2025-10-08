@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar navbar-expand-md navbar-light bg-light border-bottom">
+  <nav class="navbar navbar-expand-md border-bottom">
     <div class="container-fluid">
       <router-link class="navbar-brand d-flex align-items-center" to="/">
         <img src="@/assets/imgs/logo.svg" alt="Nutrition NFP" height="40" />
