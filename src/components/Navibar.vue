@@ -73,12 +73,12 @@
   </Menubar>
   <LoginDialog
     ref="loginDialogRef"
-    @open-register="switchToRegister"
-  ></LoginDialog>
+    :show-register-dialog="showRegisterDialog"
+  />
   <RegisterDialog
     ref="registerDialogRef"
-    @open-login="switchToLogin"
-  ></RegisterDialog>
+    :show-login-dialog="showLoginDialog"
+  />
 </template>
 
 <script setup>
@@ -157,25 +157,7 @@ const showLoginDialog = () => {
   loginDialogRef.value?.show();
 };
 
-const hideLoginDialog = () => {
-  loginDialogRef.value?.hide();
-};
-
 const showRegisterDialog = () => {
   registerDialogRef.value?.show();
-};
-
-const hideRegisterDialog = () => {
-  registerDialogRef.value?.hide();
-};
-
-const switchToRegister = () => {
-  hideLoginDialog();
-  showRegisterDialog();
-};
-
-const switchToLogin = () => {
-  hideRegisterDialog();
-  showLoginDialog();
 };
 </script>

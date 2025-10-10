@@ -66,11 +66,13 @@
 </template>
 
 <script setup>
-import { ref, defineExpose, defineEmits } from "vue";
+import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import { register } from "@/firebase/init";
 
-const emit = defineEmits(['open-login'])
+const props = defineProps({
+  showLoginDialog: Function
+})
 
 const toast = useToast();
 
@@ -130,7 +132,7 @@ const submitRegisterForm = async ({ valid, values }) => {
   if (res.success) {
     toast.add({severity:'success', summary: 'Success', detail: 'Registration successful!', life: 3000});
     visible.value = false;
-    emit('open-login')
+    props.showLoginDialog();
   } else {
     toast.add({severity:'error', summary: 'Error', detail: res.error.message, life: 3000});
   }

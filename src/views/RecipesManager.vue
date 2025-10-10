@@ -15,10 +15,8 @@
     @filter="onRecipeFilter"
   >
     <template #header>
-      <div
-        class="d-flex flex-wrap align-items-center justify-content-between mb-2"
-      >
-        <span class="fs-4 fw-bold">Recipes Management</span>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <span class="text-xl font-bold">Recipes Management</span>
         <Button
           icon="pi pi-plus"
           @click="openModal(null)"
@@ -199,7 +197,7 @@
       <div class="mt-3">
         <label for="image" class="form-label">Image (optional)</label>
         <div v-if="$form.imageUrl?.value" class="mt-2">
-          <div class="d-flex align-items-center gap-3">
+          <div class="flex items-center gap-3">
             <Image
               :src="$form.imageUrl.value"
               width="96"
@@ -211,7 +209,7 @@
               label="Remove"
               icon="pi pi-times"
               severity="danger"
-              class="flex-shrink-0"
+              outlined
               @click="
                 $form.imageUrl.value = '';
                 imageData = null;

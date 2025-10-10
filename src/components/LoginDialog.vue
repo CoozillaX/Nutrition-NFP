@@ -43,18 +43,20 @@
       <!-- Actions -->
       <div class="mt-3 gap-2 flex">
         <Button type="submit" label="Submit" :disabled="submitting"></Button>
-        <Button label="No account?" variant="link" @click="$emit('open-register')"></Button>
+        <Button label="No account?" variant="link" @click="switchToRegister"></Button>
       </div>
     </Form>
   </Dialog>
 </template>
 
 <script setup>
-import { ref, defineExpose, defineEmits } from "vue";
+import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import { login } from "@/firebase/init";
 
-const emit = defineEmits(['open-register'])
+const props = defineProps({
+  showRegisterDialog: Function
+})
 
 const toast = useToast();
 
@@ -115,6 +117,11 @@ function show() {
 
 function hide() {
   visible.value = false;
+}
+
+const switchToRegister = () => {
+  hide();
+  props.showRegisterDialog();
 }
 
 defineExpose({ show, hide });
