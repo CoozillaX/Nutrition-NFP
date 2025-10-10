@@ -1,3 +1,3 @@
 <template>
-    This is meal planner page!
+  <div class="h-screen">This is meal planner page!</div>
 </template>

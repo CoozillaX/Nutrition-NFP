@@ -1,3 +1,3 @@
 <template>
-    This is courses page!
+  <div class="h-screen">This is courses page!</div>
 </template>

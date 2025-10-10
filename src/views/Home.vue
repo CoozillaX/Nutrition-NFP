@@ -1,22 +1,20 @@
 <template>
   <section
-    class="text-center d-flex flex-column justify-content-center min-vh-100"
+    class="h-screen flex flex-col items-center justify-center gap-4"
   >
-    <div class="container">
-      <h1 class="display-5 fw-bold">Welcome to Nutrition NFP</h1>
+    <h1 class="text-black text-5xl font-bold">Welcome to Nutrition NFP</h1>
 
-      <p class="lead text-muted">
-        Learn about nutrition, cook healthy meals, and plan your diet.
-      </p>
+    <p class="text-black">
+      Learn about nutrition, cook healthy meals, and plan your diet.
+    </p>
 
-      <div class="d-flex justify-content-center gap-3 mt-4">
-        <router-link to="/courses" class="btn btn-dark btn-lg">
-          Browse Courses
-        </router-link>
-        <router-link to="/recipes" class="btn btn-outline-dark btn-lg">
-          Explore Recipes
-        </router-link>
-      </div>
+    <div class="flex justify-center gap-4">
+      <router-link to="/courses">
+        <Button label="Browse Courses" severity="contrast"></Button>
+      </router-link>
+      <router-link to="/recipes">
+        <Button label="Explore Recipes" severity="secondary"></Button>
+      </router-link>
     </div>
   </section>
 </template>
