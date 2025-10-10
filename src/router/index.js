@@ -5,8 +5,6 @@ import Home from "@/views/Home.vue";
 import Courses from "@/views/Courses.vue";
 import Recipes from "@/views/Recipes.vue";
 import Planner from "@/views/Planner.vue";
-import Login from "@/views/Login.vue";
-import Register from "@/views/Register.vue";
 import RecipesManager from "@/views/RecipesManager.vue";
 import CoursesManager from "@/views/CoursesManager.vue";
 
@@ -23,8 +21,6 @@ const routes = [
   { path: "/courses", name: "Courses", component: Courses },
   { path: "/recipes", name: "Recipes", component: Recipes },
   { path: "/planner", name: "Planner", component: Planner },
-  { path: "/login", name: "Login", component: Login },
-  { path: "/register", name: "Register", component: Register },
   {
     path: "/courses-manager",
     name: "CoursesManager",

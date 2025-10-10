@@ -299,7 +299,6 @@ async function goNext() {
 const ratingAvg = ref(0);
 const ratingCount = ref(0);
 const myRating = ref(0);
-const hover = ref(0);
 
 async function openRecipeModal(recipe) {
   selected.value = recipe;
@@ -313,7 +312,6 @@ async function openRecipeModal(recipe) {
 
 function closeRecipeModal() {
   modal?.hide();
-  hover.value = 0;
 }
 
 /* ratings */

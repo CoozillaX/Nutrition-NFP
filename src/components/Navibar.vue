@@ -1,102 +1,181 @@
 <template>
-  <nav class="navbar navbar-expand-md border-bottom">
-    <div class="container-fluid">
-      <router-link class="navbar-brand d-flex align-items-center" to="/">
-        <img src="@/assets/imgs/logo.svg" alt="Nutrition NFP" height="40" />
-        <span class="fw-bold ms-2">Nutrition NFP</span>
+  <Menubar :model="navbarItems">
+    <template #start>
+      <router-link to="/" class="flex items-center gap-2">
+        <img
+          src="@/assets/imgs/logo.svg"
+          alt="Nutrition NFP"
+          class="h-10 w-auto"
+        />
+        <h4 class="font-bold">Nutrition NFP</h4>
       </router-link>
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarSupportedContent"
-        aria-controls="navbarSupportedContent"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
+    </template>
+    <template #item="{ item, props, hasSubmenu, root }">
+      <router-link
+        v-if="!item.adminOnly || (item.adminOnly && currentRole == 'admin')"
+        class="flex items-center"
+        v-bind="props.action"
+        :to="item.to || ''"
       >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav ms-auto gap-2">
-          <li class="nav-item">
-            <router-link class="nav-link" to="/courses">Courses</router-link>
-          </li>
-          <li class="nav-item">
-            <router-link class="nav-link" to="/recipes">Recipes</router-link>
-          </li>
-          <li class="nav-item">
-            <router-link class="nav-link" to="/planner">Planner</router-link>
-          </li>
-          <li v-if="currentRole == 'admin'" class="nav-item dropdown">
-            <a
-              class="nav-link dropdown-toggle"
-              href="#"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+        <i v-if="item.icon" :class="item.icon"></i>
+        <span>{{ item.label }}</span>
+        <i
+          v-if="hasSubmenu"
+          :class="[
+            'pi pi-angle-down ml-auto',
+            { 'pi-angle-down': root, 'pi-angle-right': !root }
+          ]"
+        ></i>
+      </router-link>
+    </template>
+    <template #end>
+      <Button
+        v-if="!currentUser"
+        label="Login"
+        icon="pi pi-sign-in"
+        class="p-button-text h-10"
+        @click="showLoginDialog"
+      ></Button>
+      <div v-else>
+        <Avatar
+          icon="pi pi-user"
+          shape="circle"
+          @click="toggleAvatar"
+          aria-haspopup="true"
+          aria-controls="userMenu"
+          class="cursor-pointer h-10"
+        />
+        <Menu
+          ref="userMenuRef"
+          id="userMenu"
+          :model="userMenuItems"
+          :popup="true"
+        >
+          <template #start>
+            <button
+              v-ripple
+              class="flex items-center w-full p-3 pl-4 border-0 bg-transparent rounded-none cursor-pointer transition-colors duration-200 hover:bg-surface-100 dark:hover:bg-surface-800"
             >
-              Management
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li>
-                <router-link class="dropdown-item" to="/courses-manager">Courses</router-link>
-              </li>
-              <li>
-                <router-link class="dropdown-item" to="/recipes-manager">Recipes</router-link>
-              </li>
-            </ul>
-          </li>
-          <li v-if="!currentUser" class="nav-item">
-            <router-link
-              class="btn btn-outline-dark btn-sm mt-1 w-100"
-              to="/login"
-              >Login</router-link
-            >
-          </li>
-          <li v-if="!currentUser" class="nav-item">
-            <router-link class="btn btn-dark btn-sm mt-1 w-100" to="/register"
-              >Register</router-link
-            >
-          </li>
-          <li v-else class="nav-item dropdown">
-            <a
-              class="nav-link dropdown-toggle"
-              href="#"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              {{ currentUser.displayName || currentUser.email }}
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li>
-                <a class="dropdown-item" href="#" @click.prevent="handleLogout">
-                  Logout
-                </a>
-              </li>
-            </ul>
-          </li>
-        </ul>
+              <Avatar icon="pi pi-user" shape="circle" class="mr-2" />
+              <div class="text-left">
+                <div class="font-bold">
+                  {{ currentUser?.displayName || currentUser?.email }}
+                </div>
+                <div class="text-sm text-muted-color">
+                  {{ currentRole || "User" }}
+                </div>
+              </div>
+            </button>
+          </template>
+        </Menu>
       </div>
-    </div>
-  </nav>
+    </template>
+  </Menubar>
+  <LoginDialog
+    ref="loginDialogRef"
+    @open-register="switchToRegister"
+  ></LoginDialog>
+  <RegisterDialog
+    ref="registerDialogRef"
+    @open-login="switchToLogin"
+  ></RegisterDialog>
 </template>
 
 <script setup>
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { currentUser, currentRole, logout } from "@/firebase/init";
-import { useToast } from "primevue";
+import { useToast } from "primevue/usetoast";
+import LoginDialog from "@/components/LoginDialog.vue";
+import RegisterDialog from "@/components/RegisterDialog.vue";
+
+const loginDialogRef = ref(null);
+const registerDialogRef = ref(null);
+const userMenuRef = ref(null);
 
 const router = useRouter();
-const toast = useToast()
+const toast = useToast();
 
-const handleLogout = async () => {
-  const res = await logout();
-  if (res.success) {
-    toast.add({severity:'success', summary: 'Success', detail: 'Logout successful!', life: 3000});
-    router.push("/");
-  } else {
-    toast.add({severity:'error', summary: 'Error', detail: res.error.message, life: 3000});
+const navbarItems = ref([
+  {
+    label: "Courses",
+    icon: "pi pi-lightbulb",
+    to: "/courses"
+  },
+  {
+    label: "Recipes",
+    icon: "pi pi-book",
+    to: "/recipes"
+  },
+  {
+    label: "Planner",
+    icon: "pi pi-calendar",
+    to: "/planner"
+  },
+  {
+    label: "Management",
+    icon: "pi pi-cog",
+    items: [
+      { label: "Courses", to: "/courses-manager" },
+      { label: "Recipes", to: "/recipes-manager" }
+    ],
+    adminOnly: true
   }
+]);
+
+const userMenuItems = ref([
+  {
+    label: "Logout",
+    icon: "pi pi-sign-out",
+    command: async () => {
+      const res = await logout();
+      if (res.success) {
+        toast.add({
+          severity: "success",
+          summary: "Success",
+          detail: "Logout successful!",
+          life: 3000
+        });
+        router.push("/");
+      } else {
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: res.error.message,
+          life: 3000
+        });
+      }
+    }
+  }
+]);
+
+const toggleAvatar = (event) => {
+  userMenuRef.value?.toggle(event);
+};
+
+const showLoginDialog = () => {
+  loginDialogRef.value?.show();
+};
+
+const hideLoginDialog = () => {
+  loginDialogRef.value?.hide();
+};
+
+const showRegisterDialog = () => {
+  registerDialogRef.value?.show();
+};
+
+const hideRegisterDialog = () => {
+  registerDialogRef.value?.hide();
+};
+
+const switchToRegister = () => {
+  hideLoginDialog();
+  showRegisterDialog();
+};
+
+const switchToLogin = () => {
+  hideRegisterDialog();
+  showLoginDialog();
 };
 </script>
