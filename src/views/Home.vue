@@ -1,8 +1,9 @@
 <template>
-  <section
+  <div
+    id="background"
     class="h-screen flex flex-col items-center justify-center gap-4"
   >
-    <h1 class="text-black text-5xl font-bold">Welcome to Nutrition NFP</h1>
+    <h1 class="text-black text-4xl font-bold">Welcome to Nutrition NFP</h1>
 
     <p class="text-black">
       Learn about nutrition, cook healthy meals, and plan your diet.
@@ -16,11 +17,11 @@
         <Button label="Explore Recipes" severity="secondary"></Button>
       </router-link>
     </div>
-  </section>
+  </div>
 </template>
 
 <style scoped>
-section {
+#background {
   background: linear-gradient(
       rgba(128,128,128,0),
       rgba(128,128,128,1)

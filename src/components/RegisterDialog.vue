@@ -1,5 +1,12 @@
 <template>
-  <Dialog v-model:visible="visible" header="Register" modal dismissableMask :style="{ width: '30rem' }">
+  <Dialog
+    v-model:visible="visible"
+    header="Register"
+    modal
+    dismissableMask
+    :style="{ width: '30rem' }"
+    :draggable="false"
+  >
     <Form
       v-slot="$form"
       :resolver="registerFormResolver"
@@ -72,7 +79,7 @@ import { register } from "@/firebase/init";
 
 const props = defineProps({
   showLoginDialog: Function
-})
+});
 
 const toast = useToast();
 
@@ -130,11 +137,21 @@ const submitRegisterForm = async ({ valid, values }) => {
 
   let res = await register(values.email, values.password);
   if (res.success) {
-    toast.add({severity:'success', summary: 'Success', detail: 'Registration successful!', life: 3000});
+    toast.add({
+      severity: "success",
+      summary: "Success",
+      detail: "Registration successful!",
+      life: 3000
+    });
     visible.value = false;
     props.showLoginDialog();
   } else {
-    toast.add({severity:'error', summary: 'Error', detail: res.error.message, life: 3000});
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: res.error.message,
+      life: 3000
+    });
   }
 
   submitting.value = false;

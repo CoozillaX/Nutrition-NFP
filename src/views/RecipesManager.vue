@@ -28,7 +28,9 @@
     <template #empty>
       <div class="text-center">No recipes found</div>
     </template>
-    <template #loading> Loading data... </template>
+    <template #loading>
+      <ProgressSpinner aria-label="Loading"/>
+    </template>
     <Column header="Image">
       <template #body="slotProps">
         <Image
@@ -128,6 +130,7 @@
     header="Recipe Editor"
     :style="{ width: '50rem' }"
     @hide="imageData = null"
+    :draggable="false"
   >
     <Form
       v-slot="$form"

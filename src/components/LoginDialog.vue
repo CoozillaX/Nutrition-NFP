@@ -1,5 +1,12 @@
 <template>
-  <Dialog v-model:visible="visible" header="Login" modal dismissableMask :style="{ width: '30rem' }">
+  <Dialog
+    v-model:visible="visible"
+    header="Login"
+    modal
+    dismissableMask
+    :style="{ width: '30rem' }"
+    :draggable="false"
+  >
     <Form
       v-slot="$form"
       :resolver="loginFormResolver"
@@ -43,7 +50,11 @@
       <!-- Actions -->
       <div class="mt-3 gap-2 flex">
         <Button type="submit" label="Submit" :disabled="submitting"></Button>
-        <Button label="No account?" variant="link" @click="switchToRegister"></Button>
+        <Button
+          label="No account?"
+          variant="link"
+          @click="switchToRegister"
+        ></Button>
       </div>
     </Form>
   </Dialog>
@@ -56,7 +67,7 @@ import { login } from "@/firebase/init";
 
 const props = defineProps({
   showRegisterDialog: Function
-})
+});
 
 const toast = useToast();
 
@@ -122,7 +133,7 @@ function hide() {
 const switchToRegister = () => {
   hide();
   props.showRegisterDialog();
-}
+};
 
 defineExpose({ show, hide });
 </script>
