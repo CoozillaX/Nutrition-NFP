@@ -151,11 +151,11 @@
           fluid
         />
         <Message
-          v-if="$form.name?.invalid"
+          v-if="$form.name?.error"
           severity="error"
           size="small"
           variant="simple"
-          >{{ $form.name.error.message }}</Message
+          >{{ $form.name.errors }}</Message
         >
       </div>
       <!-- Summary -->
@@ -169,11 +169,11 @@
           fluid
         ></Textarea>
         <Message
-          v-if="$form.summary?.invalid"
+          v-if="$form.summary?.error"
           severity="error"
           size="small"
           variant="simple"
-          >{{ $form.summary.error.message }}</Message
+          >{{ $form.summary.errors }}</Message
         >
       </div>
       <!-- Details -->
@@ -188,11 +188,11 @@
         >
         </Textarea>
         <Message
-          v-if="$form.details?.invalid"
+          v-if="$form.details?.error"
           severity="error"
           size="small"
           variant="simple"
-          >{{ $form.details.error.details }}</Message
+          >{{ $form.details.errors }}</Message
         >
       </div>
       <!-- Image (optional) -->
@@ -410,7 +410,7 @@ function onFileSelect(e) {
 }
 
 async function onDialogSubmit({ valid, values }) {
-  if (!valid || !values) return;
+  if (!valid) return;
   try {
     submitting.value = true;
 
