@@ -1,4 +1,24 @@
 <template>
+  <Toolbar>
+    <template #start>
+      <h2 class="font-bold text-xl">Recipes Manager</h2>
+    </template>
+
+    <template #end>
+      <Button
+        label="New"
+        icon="pi pi-plus"
+        class="mr-2"
+        @click="openModal()"
+      ></Button>
+      <Button
+        label="Export"
+        icon="pi pi-upload"
+        severity="secondary"
+        @click="exportRecipesCSV($event)"
+      ></Button>
+    </template>
+  </Toolbar>
   <!-- Recipes DataTable -->
   <DataTable
     tableStyle="min-width: 50rem"
@@ -14,22 +34,11 @@
     @page="onRecipeLazyLoad"
     @filter="onRecipeFilter"
   >
-    <template #header>
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="text-xl font-bold">Recipes Management</span>
-        <Button
-          icon="pi pi-plus"
-          @click="openModal(null)"
-          rounded
-          raised
-        ></Button>
-      </div>
-    </template>
     <template #empty>
       <div class="text-center">No recipes found</div>
     </template>
     <template #loading>
-      <ProgressSpinner aria-label="Loading"/>
+      <ProgressSpinner aria-label="Loading" />
     </template>
     <Column header="Image">
       <template #body="slotProps">
@@ -256,9 +265,9 @@ import { ref, reactive, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { FilterMatchMode } from "@primevue/core/api";
-import { getCountFromServer } from "firebase/firestore";
 import {
   generateRecipesQueryByFilters,
+  getRecipesTotalCount,
   getRecipesByPage,
   addRecipe,
   updateRecipe,
@@ -308,7 +317,6 @@ let cursors = [];
 
 async function reloadDataTable() {
   cursors = [];
-  first.value = 1;
   totalRecords.value = 0;
   await onRecipeLazyLoad();
 }
@@ -330,8 +338,7 @@ const onRecipeLazyLoad = async (event) => {
 
     // Fetch total count only once
     if (page === 0 && totalRecords.value === 0) {
-      const snapCount = await getCountFromServer(currQuery);
-      totalRecords.value = snapCount.data().count || 0;
+      totalRecords.value = await getRecipesTotalCount(currQuery);
     }
 
     // Fetch data for the current page
@@ -343,6 +350,7 @@ const onRecipeLazyLoad = async (event) => {
     );
 
     recipesData.value = data;
+    first.value = page * rows;
     cursors = newCursors;
   } catch (error) {
     toast.add({
@@ -505,8 +513,37 @@ async function confirmDeleteRecipe(event, recipe) {
   });
 }
 
+// Export CSV
+async function exportRecipesCSV() {
+  // fetch all data without pagination
+  const count = await getRecipesTotalCount(currQuery);
+  getRecipesByPage(0, currQuery, count, []).then(({ data }) => {
+    // convert to CSV format
+    const csv = [
+      ["ID", "Name", "Summary", "Created At"].join(","),
+      ...data.map((r) =>
+        [
+          `"${r.id}"`,
+          `"${r.name.replace(/"/g, '""')}"`,
+          `"${r.summary.replace(/"/g, '""')}"`,
+          `"${formatDate(r.createdAt)}"`
+        ].join(",")
+      )
+    ].join("\n");
+
+    // download as CSV file
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "recipes_export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
 onMounted(() => {
-  onRecipeLazyLoad(null);
+  onRecipeLazyLoad();
 });
 </script>
 

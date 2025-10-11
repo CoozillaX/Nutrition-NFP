@@ -9,7 +9,9 @@ import {
   orderBy,
   where,
   serverTimestamp,
-  setDoc
+  addDoc,
+  setDoc,
+  getCountFromServer
 } from "firebase/firestore";
 import { FilterMatchMode } from "@primevue/core/api";
 import { db, currentUser } from "@/firebase/init";
@@ -102,6 +104,11 @@ const generateRecipesQueryByFilters = (filters) => {
   return newQuery;
 };
 
+async function getRecipesTotalCount(currQuery) {
+  const snapCount = await getCountFromServer(currQuery);
+  return snapCount.data().count || 0;
+}
+
 async function getRecipesByPage(pageNum, baseQuery, countPerRow, cursors) {
   const cursor = await getCursorForPage(
     pageNum,
@@ -183,6 +190,7 @@ async function deleteRecipe(recipe) {
 
 export {
   generateRecipesQueryByFilters,
+  getRecipesTotalCount,
   getRecipesByPage,
   addRecipe,
   updateRecipe,

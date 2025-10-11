@@ -41,10 +41,12 @@
       >
         <template #header>
           <img
+            v-if="recipe.imageUrl"
             :alt="recipe.name"
             :src="recipe.imageUrl"
             class="w-full h-48 object-cover"
           />
+          <img v-else class="w-full h-48 object-cover" />
         </template>
         <template #title>
           <h5 class="font-semibold text-lg">
@@ -84,6 +86,7 @@
         :src="selected.imageUrl"
         class="w-full h-112 object-cover mb-4 rounded-lg"
       />
+      <img v-else class="w-full h-112 object-cover mb-4 rounded-lg" />
       <!-- Summary -->
       <p class="mb-4 text-muted-color" v-if="selected?.summary">
         {{ selected.summary }}
@@ -125,7 +128,7 @@
               :disabled="ratingSaving || myRating === 0"
               @click="clearMyRating"
               class="ms-3 text-xs"
-            />
+            ></Button>
           </div>
         </div>
 
@@ -141,9 +144,9 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { currentUser } from "@/firebase/init";
-import { getCountFromServer } from "firebase/firestore";
 import {
   generateRecipesQueryByFilters,
+  getRecipesTotalCount,
   getRecipesByPage
 } from "@/firestore/recipes";
 import { getRating, setRating, clearRating } from "@/firestore/ratings";
@@ -159,18 +162,13 @@ const totalCount = ref(0);
 let currQuery = generateRecipesQueryByFilters(null);
 let cursors = [];
 
-async function fetchTotalCount() {
-  const snap = await getCountFromServer(currQuery);
-  totalCount.value = snap.data().count || 0;
-}
-
 async function loadPage({ first, page }) {
   loading.value = true;
   offset.value = first;
   try {
     // If first load, fetch total count
     if (totalCount.value === 0 && page === 0) {
-      await fetchTotalCount();
+      totalCount.value = await getRecipesTotalCount(currQuery);
     }
 
     // Fetch data for the current page
