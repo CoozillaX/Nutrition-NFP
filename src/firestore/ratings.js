@@ -74,4 +74,13 @@ async function clearRating(recipeId) {
   return deleteDoc(doc(db, "ratings", docId));
 }
 
-export { getRating, setRating, clearRating };
+async function clearAllRatings(recipeId) {
+  const qAll = query(
+    collection(db, "ratings"),
+    where("recipeId", "==", recipeId)
+  );
+  const snap = await getDocs(qAll);
+  return Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+}
+
+export { getRating, setRating, clearRating, clearAllRatings };

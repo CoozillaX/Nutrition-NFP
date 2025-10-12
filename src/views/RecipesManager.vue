@@ -15,7 +15,7 @@
         label="Export"
         icon="pi pi-upload"
         severity="secondary"
-        @click="exportRecipesCSV($event)"
+        @click="exportRecipesCSV"
       ></Button>
     </template>
   </Toolbar>

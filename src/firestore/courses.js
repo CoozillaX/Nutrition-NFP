@@ -12,9 +12,8 @@ import {
 import { FilterMatchMode } from "@primevue/core/api";
 import { db, currentUser } from "@/firebase/init";
 import { uploadImage, deleteImage } from "@/firebase/uploader";
-import { clearAllRatings } from "@/firestore/ratings";
 
-const generateRecipesQueryByFilters = (filters) => {
+const generateCoursesQueryByFilters = (filters) => {
   let newQuery = query(collection(db, "recipes"), orderBy("createdAt"));
   if (!filters) return newQuery;
 
@@ -64,60 +63,59 @@ const generateRecipesQueryByFilters = (filters) => {
   return newQuery;
 };
 
-async function addRecipe(recipe, imageFile) {
+async function addCourse(course, imageFile) {
   // Upload image if exists
   if (imageFile) {
     const { url, path } = await uploadImage(imageFile);
-    recipe.imageUrl = url;
-    recipe.imagePath = path;
+    course.imageUrl = url;
+    course.imagePath = path;
   }
-  recipe.createdBy = currentUser.value?.uid || null;
-  recipe.createdAt = serverTimestamp();
+  course.createdBy = currentUser.value?.uid || null;
+  course.createdAt = serverTimestamp();
   // Add the recipe document
-  return addDoc(collection(db, "recipes"), recipe);
+  return addDoc(collection(db, "courses"), course);
 }
 
-async function updateRecipe(recipe, imageFile) {
+async function updateCourse(course, imageFile) {
   // Delete old image
-  if (!recipe.imageUrl && recipe.imagePath) {
-    deleteImage(recipe.imagePath);
-    recipe.imagePath = null;
+  if (!course.imageUrl && course.imagePath) {
+    deleteImage(course.imagePath);
+    course.imagePath = null;
   }
   // Upload new image if exists
   if (imageFile) {
     const { url, path } = await uploadImage(imageFile);
-    recipe.imageUrl = url;
-    recipe.imagePath = path;
+    course.imageUrl = url;
+    course.imagePath = path;
   }
   // Update the recipe document
   return setDoc(
-    doc(db, "recipes", recipe.id),
+    doc(db, "courses", course.id),
     {
-      name: recipe.name,
-      summary: recipe.summary,
-      details: recipe.details,
-      imageUrl: recipe.imageUrl || null,
-      imagePath: recipe.imagePath || null
+      name: course.name,
+      summary: course.summary,
+      details: course.details,
+      imageUrl: course.imageUrl || null,
+      imagePath: course.imagePath || null,
+      location: course.location,
     },
     { merge: true }
   );
 }
 
-async function deleteRecipe(recipe) {
+async function deleteCourse(course) {
   // Delete associated image if exists
-  if (recipe.imagePath) {
-    deleteImage(recipe.imagePath);
+  if (course.imagePath) {
+    deleteImage(course.imagePath);
   }
   // Delete the recipe document
-  await deleteDoc(doc(db, "recipes", recipe.id));
-
-  // Clear all ratings associated with this recipe
-  return clearAllRatings(recipe.id);
+  return deleteDoc(doc(db, "courses", course.id));
+  // TODO: Clear all time slots associated with this course
 }
 
 export {
-  generateRecipesQueryByFilters,
-  addRecipe,
-  updateRecipe,
-  deleteRecipe
+  generateCoursesQueryByFilters,
+  addCourse,
+  updateCourse,
+  deleteCourse
 };
