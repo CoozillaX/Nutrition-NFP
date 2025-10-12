@@ -144,11 +144,8 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { currentUser } from "@/firebase/init";
-import {
-  generateRecipesQueryByFilters,
-  getRecipesTotalCount,
-  getRecipesByPage
-} from "@/firestore/recipes";
+import { generateRecipesQueryByFilters } from "@/firestore/recipes";
+import { fetchByPage, getTotalCount } from "@/firestore/utils";
 import { getRating, setRating, clearRating } from "@/firestore/ratings";
 
 /* pagination */
@@ -168,11 +165,11 @@ async function loadPage({ first, page }) {
   try {
     // If first load, fetch total count
     if (totalCount.value === 0 && page === 0) {
-      totalCount.value = await getRecipesTotalCount(currQuery);
+      totalCount.value = await getTotalCount(currQuery);
     }
 
     // Fetch data for the current page
-    const { data, cursors: newCursors } = await getRecipesByPage(
+    const { data, cursors: newCursors } = await fetchByPage(
       page,
       currQuery,
       pageSize,

@@ -138,7 +138,6 @@
     modal
     header="Recipe Editor"
     :style="{ width: '50rem' }"
-    @hide="imageData = null"
     :draggable="false"
   >
     <Form
@@ -267,12 +266,11 @@ import { useConfirm } from "primevue/useconfirm";
 import { FilterMatchMode } from "@primevue/core/api";
 import {
   generateRecipesQueryByFilters,
-  getRecipesTotalCount,
-  getRecipesByPage,
   addRecipe,
   updateRecipe,
   deleteRecipe
 } from "@/firestore/recipes";
+import { fetchByPage, getTotalCount } from "@/firestore/utils";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -290,15 +288,6 @@ function formatDate(timestamp) {
 }
 
 // Recipes DataTable
-const initialValues = reactive({
-  id: "",
-  name: "",
-  summary: "",
-  details: "",
-  imagePath: "",
-  imageUrl: ""
-});
-
 const filters = ref({
   name: { value: null, matchMode: FilterMatchMode.EQUALS },
   summary: { value: null, matchMode: FilterMatchMode.EQUALS },
@@ -338,11 +327,11 @@ const onRecipeLazyLoad = async (event) => {
 
     // Fetch total count only once
     if (page === 0 && totalRecords.value === 0) {
-      totalRecords.value = await getRecipesTotalCount(currQuery);
+      totalRecords.value = await getTotalCount(currQuery);
     }
 
     // Fetch data for the current page
-    const { data, cursors: newCursors } = await getRecipesByPage(
+    const { data, cursors: newCursors } = await fetchByPage(
       page,
       currQuery,
       rows,
@@ -365,6 +354,15 @@ const onRecipeLazyLoad = async (event) => {
 };
 
 // Recipe Modal
+const initialValues = reactive({
+  id: "",
+  name: "",
+  summary: "",
+  details: "",
+  imagePath: "",
+  imageUrl: ""
+});
+
 const modalVisible = ref(false);
 const imageData = ref(null);
 const submitting = ref(false);
@@ -384,6 +382,7 @@ const openModal = (recipe) => {
     initialValues.details = "";
     initialValues.imagePath = "";
     initialValues.imageUrl = "";
+    imageData.value = null;
   }
   modalVisible.value = true;
 };
@@ -516,8 +515,8 @@ async function confirmDeleteRecipe(event, recipe) {
 // Export CSV
 async function exportRecipesCSV() {
   // fetch all data without pagination
-  const count = await getRecipesTotalCount(currQuery);
-  getRecipesByPage(0, currQuery, count, []).then(({ data }) => {
+  const count = await getTotalCount(currQuery);
+  fetchByPage(0, currQuery, count, []).then(({ data }) => {
     // convert to CSV format
     const csv = [
       ["ID", "Name", "Summary", "Created At"].join(","),
