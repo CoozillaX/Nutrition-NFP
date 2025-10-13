@@ -46,6 +46,13 @@ service cloud.firestore {
         && (isOwnRatingDel(ratingId) || request.auth.token.role == "admin");
     }
 
+    // Courses
+    match /courses/{courseId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null
+        && request.auth.token.role == "admin";
+    }
+
     // default deny writes elsewhere
     match /{document=**} {
       allow read: if true;

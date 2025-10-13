@@ -270,7 +270,7 @@ import {
   updateRecipe,
   deleteRecipe
 } from "@/firestore/recipes";
-import { fetchByPage, getTotalCount } from "@/firestore/utils";
+import { fetchByPage, getTotalCount, updateImage } from "@/firestore/utils";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -424,23 +424,33 @@ async function onDialogSubmit({ valid, values }) {
 
     // Create or update recipe
     if (values.id) {
-      await updateRecipe(
-        {
-          id: values.id,
-          name: values.name,
-          summary: values.summary,
-          details: values.details,
-          imagePath: values.imagePath,
-          imageUrl: values.imageUrl
-        },
-        imageData.value
-      );
+      // Update basic info
+      let updatedFields = {
+        name: values.name.trim(),
+        summary: values.summary.trim(),
+        details: values.details.trim()
+      };
+
+      // Update image if changed
+      if (
+        imageData.value || // New image selected
+        (!values.imageUrl && values.imagePath) // Existing image removed
+      ) {
+        const { imageUrl, imagePath } = await updateImage(
+          values.imagePath,
+          imageData.value
+        );
+        updatedFields.imageUrl = imageUrl;
+        updatedFields.imagePath = imagePath;
+      }
+
+      await updateRecipe(values.id, updatedFields);
     } else {
       await addRecipe(
         {
-          name: values.name,
-          summary: values.summary,
-          details: values.details
+          name: values.name.trim(),
+          summary: values.summary.trim(),
+          details: values.details.trim()
         },
         imageData.value
       );

@@ -11,8 +11,8 @@ import {
 } from "firebase/firestore";
 import { FilterMatchMode } from "@primevue/core/api";
 import { db, currentUser } from "@/firebase/init";
-import { uploadImage, deleteImage } from "@/firebase/uploader";
 import { clearAllRatings } from "@/firestore/ratings";
+import { updateImage } from "@/firestore/utils";
 
 const generateRecipesQueryByFilters = (filters) => {
   let newQuery = query(collection(db, "recipes"), orderBy("createdAt"));
@@ -67,9 +67,9 @@ const generateRecipesQueryByFilters = (filters) => {
 async function addRecipe(recipe, imageFile) {
   // Upload image if exists
   if (imageFile) {
-    const { url, path } = await uploadImage(imageFile);
-    recipe.imageUrl = url;
-    recipe.imagePath = path;
+    const { imageUrl, imagePath } = await updateImage(null, imageFile);
+    recipe.imageUrl = imageUrl;
+    recipe.imagePath = imagePath;
   }
   recipe.createdBy = currentUser.value?.uid || null;
   recipe.createdAt = serverTimestamp();
@@ -77,36 +77,15 @@ async function addRecipe(recipe, imageFile) {
   return addDoc(collection(db, "recipes"), recipe);
 }
 
-async function updateRecipe(recipe, imageFile) {
-  // Delete old image
-  if (!recipe.imageUrl && recipe.imagePath) {
-    deleteImage(recipe.imagePath);
-    recipe.imagePath = null;
-  }
-  // Upload new image if exists
-  if (imageFile) {
-    const { url, path } = await uploadImage(imageFile);
-    recipe.imageUrl = url;
-    recipe.imagePath = path;
-  }
-  // Update the recipe document
-  return setDoc(
-    doc(db, "recipes", recipe.id),
-    {
-      name: recipe.name,
-      summary: recipe.summary,
-      details: recipe.details,
-      imageUrl: recipe.imageUrl || null,
-      imagePath: recipe.imagePath || null
-    },
-    { merge: true }
-  );
+async function updateRecipe(id, updatedFields) {
+  const { id: _, ...data } = updatedFields; // Exclude id from data
+  return setDoc(doc(db, "recipes", id), data, { merge: true });
 }
 
 async function deleteRecipe(recipe) {
   // Delete associated image if exists
   if (recipe.imagePath) {
-    deleteImage(recipe.imagePath);
+    await updateImage(recipe.imagePath, null);
   }
   // Delete the recipe document
   await deleteDoc(doc(db, "recipes", recipe.id));

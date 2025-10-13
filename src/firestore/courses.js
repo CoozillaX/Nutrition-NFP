@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 import { FilterMatchMode } from "@primevue/core/api";
 import { db, currentUser } from "@/firebase/init";
-import { uploadImage, deleteImage } from "@/firebase/uploader";
+import { updateImage } from "@/firestore/utils";
 
 const generateCoursesQueryByFilters = (filters) => {
   let newQuery = query(collection(db, "recipes"), orderBy("createdAt"));
@@ -66,9 +66,9 @@ const generateCoursesQueryByFilters = (filters) => {
 async function addCourse(course, imageFile) {
   // Upload image if exists
   if (imageFile) {
-    const { url, path } = await uploadImage(imageFile);
-    course.imageUrl = url;
-    course.imagePath = path;
+    const { imageUrl, imagePath } = await updateImage(null, imageFile);
+    course.imageUrl = imageUrl;
+    course.imagePath = imagePath;
   }
   course.createdBy = currentUser.value?.uid || null;
   course.createdAt = serverTimestamp();
@@ -76,46 +76,19 @@ async function addCourse(course, imageFile) {
   return addDoc(collection(db, "courses"), course);
 }
 
-async function updateCourse(course, imageFile) {
-  // Delete old image
-  if (!course.imageUrl && course.imagePath) {
-    deleteImage(course.imagePath);
-    course.imagePath = null;
-  }
-  // Upload new image if exists
-  if (imageFile) {
-    const { url, path } = await uploadImage(imageFile);
-    course.imageUrl = url;
-    course.imagePath = path;
-  }
-  // Update the recipe document
-  return setDoc(
-    doc(db, "courses", course.id),
-    {
-      name: course.name,
-      summary: course.summary,
-      details: course.details,
-      imageUrl: course.imageUrl || null,
-      imagePath: course.imagePath || null,
-      location: course.location,
-    },
-    { merge: true }
-  );
+async function updateCourse(id, updatedFields) {
+  const { id: _, ...data } = updatedFields; // Exclude id from data
+  return setDoc(doc(db, "courses", id), data, { merge: true });
 }
 
 async function deleteCourse(course) {
   // Delete associated image if exists
   if (course.imagePath) {
-    deleteImage(course.imagePath);
+    await updateImage(course.imagePath, null);
   }
   // Delete the recipe document
   return deleteDoc(doc(db, "courses", course.id));
   // TODO: Clear all time slots associated with this course
 }
 
-export {
-  generateCoursesQueryByFilters,
-  addCourse,
-  updateCourse,
-  deleteCourse
-};
+export { generateCoursesQueryByFilters, addCourse, updateCourse, deleteCourse };

@@ -5,6 +5,7 @@ import {
   getDocs,
   getCountFromServer
 } from "firebase/firestore";
+import { uploadImage, deleteImage } from "@/firebase/uploader";
 
 async function getCursorForPage(pageNum, baseQuery, countPerRow, cursors) {
   // If we already have the cursor for the target page, return it
@@ -72,8 +73,31 @@ async function getTotalCount(currQuery) {
   return snapCount.data().count || 0;
 }
 
+async function updateImage(currentImagePath, imageFile) {
+  let updatedFields = {
+    imageUrl: null,
+    imagePath: null
+  };
+
+  // Delete old image
+  if (currentImagePath) {
+    deleteImage(currentImagePath);
+  }
+
+  // Upload new image if exists
+  if (imageFile) {
+    const { url, path } = await uploadImage(imageFile);
+    updatedFields.imageUrl = url;
+    updatedFields.imagePath = path;
+  }
+
+  // Update the recipe document
+  return updatedFields;
+}
+
 export {
   getCursorForPage,
   fetchByPage,
-  getTotalCount
+  getTotalCount,
+  updateImage
 };

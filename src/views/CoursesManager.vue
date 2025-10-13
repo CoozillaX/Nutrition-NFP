@@ -36,7 +36,11 @@
             v-slot="$form"
             :initialValues="initialValues"
             :resolver="formResolver"
-            @submit="onDialogSubmit(activateCallback)($event)"
+            @submit="
+              onFormSubmit(() => {
+                activateCallback('2');
+              })($event)
+            "
           >
             <!-- Name -->
             <div>
@@ -97,10 +101,10 @@
             <!-- Image (optional) -->
             <div class="mt-3">
               <label for="image" class="form-label">Image (optional)</label>
-              <div v-if="$form.imageUrl?.value" class="mt-2">
+              <div v-if="currentCourse?.imageUrl" class="mt-2">
                 <div class="flex items-center gap-3">
                   <Image
-                    :src="$form.imageUrl.value"
+                    :src="currentCourse?.imageUrl"
                     width="96"
                     height="96"
                     preview
@@ -111,10 +115,7 @@
                     icon="pi pi-times"
                     severity="danger"
                     outlined
-                    @click="
-                      $form.imageUrl.value = '';
-                      imageData = null;
-                    "
+                    @click="onFileRemove"
                     :disabled="submitting"
                     size="small"
                   ></Button>
@@ -189,8 +190,9 @@
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="
-                activateCallback('3');
-                updateCalendar();
+                onLocationSubmit(() => {
+                  activateCallback('3');
+                })
               "
             ></Button>
           </div>
@@ -215,6 +217,7 @@
 
 <script setup>
 import { ref, reactive, nextTick } from "vue";
+import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import {
   MapboxMap,
@@ -222,7 +225,7 @@ import {
   MapboxGeocoder,
   MapboxNavigationControl
 } from "@studiometa/vue-mapbox-gl";
-import 'mapbox-gl/dist/mapbox-gl.css';
+import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/lib/mapbox-gl-geocoder.css";
 
 import FullCalendar from "@fullcalendar/vue3";
@@ -230,6 +233,10 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
+import { addCourse, updateCourse } from "@/firestore/courses";
+import { updateImage } from "@/firestore/utils";
+
+const toast = useToast();
 const confirm = useConfirm();
 
 // Mapbox
@@ -243,7 +250,7 @@ function onMapClick(event) {
 // FullCalendar
 const fc = ref(null);
 
-const updateCalendar = () => {
+const reloadCalendar = () => {
   nextTick(() => fc.value?.getApi().render());
 };
 
@@ -315,13 +322,11 @@ function getAllEvents() {
 }
 
 // Course Modal
+const currentCourse = ref(null);
 const initialValues = reactive({
-  id: "",
   name: "",
   summary: "",
-  details: "",
-  imagePath: "",
-  imageUrl: ""
+  details: ""
 });
 
 const modalVisible = ref(false);
@@ -330,25 +335,20 @@ const courseLngLat = ref(null);
 const submitting = ref(false);
 
 const openModal = (course) => {
-  courseLngLat.value = null;
+  currentCourse.value = course;
+  imageData.value = null;
   if (course) {
     // Edit existing course
-    initialValues.id = course.id;
     initialValues.name = course.name;
     initialValues.summary = course.summary;
     initialValues.details = course.details;
-    initialValues.imagePath = course.imagePath || "";
-    initialValues.imageUrl = course.imageUrl || "";
-    courseLngLat.value = course.location || null;
+    courseLngLat.value = course.location;
   } else {
     // Create new course
-    initialValues.id = "";
     initialValues.name = "";
     initialValues.summary = "";
     initialValues.details = "";
-    initialValues.imagePath = "";
-    initialValues.imageUrl = "";
-    imageData.value = null;
+    courseLngLat.value = null;
   }
   modalVisible.value = true;
 };
@@ -383,15 +383,110 @@ function onFileSelect(e) {
   if (file) imageData.value = file;
 }
 
-function onDialogSubmit(nextStepFn) {
-  return ({ valid, values }) => {
-    if (!valid) return;
-    console.log("Form Values:", values);
-    console.log("Image Data:", imageData.value);
-    console.log("Course Location:", courseLngLat.value);
-    console.log("Course Time Slots:", getAllEvents());
+function onFileRemove() {
+  if (currentCourse.value) {
+    currentCourse.value.imageUrl = "";
+  }
+  imageData.value = null;
+}
 
-    nextStepFn("2");
+function onFormSubmit(nextStepFn) {
+  return async ({ valid, values }) => {
+    if (!valid) return;
+    try {
+      submitting.value = true;
+      if (currentCourse.value) {
+        // Update basic info
+        let updatedFields = {
+          name: values.name.trim(),
+          summary: values.summary.trim(),
+          details: values.details.trim()
+        };
+
+        // Update image if changed
+        if (
+          imageData.value || // New image selected
+          (!currentCourse.value?.imageUrl && currentCourse.value?.imagePath) // Existing image removed
+        ) {
+          const { imageUrl, imagePath } = await updateImage(
+            currentCourse.value?.imagePath,
+            imageData.value
+          );
+          updatedFields.imageUrl = imageUrl;
+          updatedFields.imagePath = imagePath;
+        }
+
+        // Save to Firestore
+        await updateCourse(currentCourse.value.id, updatedFields);
+        nextTick(() => {
+          currentCourse.value = { ...currentCourse.value, ...updatedFields };
+        });
+      } else {
+        // Creating new course
+        const courseRef = await addCourse(
+          {
+            name: values.name.trim(),
+            summary: values.summary.trim(),
+            details: values.details.trim()
+          },
+          imageData.value
+        );
+        nextTick(() => {
+          currentCourse.value = { id: courseRef.id, ...values };
+        });
+      }
+
+      toast.add({
+        severity: "success",
+        summary: "Success",
+        detail: "Course basic info saved.",
+        life: 3000
+      });
+
+      nextStepFn();
+    } catch (err) {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: `Error: ${err.message}`,
+        life: 3000
+      });
+    } finally {
+      submitting.value = false;
+    }
   };
 }
+
+function onLocationSubmit(nextStepFn) {
+  updateCourse(currentCourse.value.id, {
+    location: courseLngLat.value
+  })
+    .then(() => {
+      toast.add({
+        severity: "success",
+        summary: "Success",
+        detail: "Course location saved.",
+        life: 3000
+      });
+      nextStepFn();
+      reloadCalendar();
+    })
+    .catch((err) => {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: `Error: ${err.message}`,
+        life: 3000
+      });
+    });
+}
 </script>
+
+<style scoped>
+:deep(.p-progressbar) {
+  display: none !important;
+}
+:deep(.p-fileupload-file-badge) {
+  display: none !important;
+}
+</style>
