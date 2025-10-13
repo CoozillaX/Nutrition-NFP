@@ -12,8 +12,9 @@ import {
 import { FilterMatchMode } from "@primevue/core/api";
 import { db, currentUser } from "@/firebase/init";
 import { updateImage } from "@/firestore/utils";
+import { deleteAllCourseSlotsByCourseId } from "@/firestore/courseSlots";
 
-const generateCoursesQueryByFilters = (filters) => {
+function generateCoursesQueryByFilters(filters) {
   let newQuery = query(collection(db, "recipes"), orderBy("createdAt"));
   if (!filters) return newQuery;
 
@@ -61,22 +62,23 @@ const generateCoursesQueryByFilters = (filters) => {
     }
   }
   return newQuery;
-};
+}
 
 async function addCourse(course, imageFile) {
+  const { id: _, ...data } = course; // Exclude id from data
   // Upload image if exists
   if (imageFile) {
     const { imageUrl, imagePath } = await updateImage(null, imageFile);
-    course.imageUrl = imageUrl;
-    course.imagePath = imagePath;
+    data.imageUrl = imageUrl;
+    data.imagePath = imagePath;
   }
-  course.createdBy = currentUser.value?.uid || null;
-  course.createdAt = serverTimestamp();
+  data.createdBy = currentUser.value?.uid || null;
+  data.createdAt = serverTimestamp();
   // Add the recipe document
-  return addDoc(collection(db, "courses"), course);
+  return addDoc(collection(db, "courses"), data);
 }
 
-async function updateCourse(id, updatedFields) {
+function updateCourse(id, updatedFields) {
   const { id: _, ...data } = updatedFields; // Exclude id from data
   return setDoc(doc(db, "courses", id), data, { merge: true });
 }
@@ -86,9 +88,10 @@ async function deleteCourse(course) {
   if (course.imagePath) {
     await updateImage(course.imagePath, null);
   }
+  // TODO: Clear all time slots associated with this course
+  await deleteAllCourseSlotsByCourseId(course.id);
   // Delete the recipe document
   return deleteDoc(doc(db, "courses", course.id));
-  // TODO: Clear all time slots associated with this course
 }
 
 export { generateCoursesQueryByFilters, addCourse, updateCourse, deleteCourse };

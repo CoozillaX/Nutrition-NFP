@@ -14,7 +14,7 @@ import { db, currentUser } from "@/firebase/init";
 import { clearAllRatings } from "@/firestore/ratings";
 import { updateImage } from "@/firestore/utils";
 
-const generateRecipesQueryByFilters = (filters) => {
+function generateRecipesQueryByFilters(filters) {
   let newQuery = query(collection(db, "recipes"), orderBy("createdAt"));
   if (!filters) return newQuery;
 
@@ -65,19 +65,20 @@ const generateRecipesQueryByFilters = (filters) => {
 };
 
 async function addRecipe(recipe, imageFile) {
+  const { id: _, ...data } = recipe; // Exclude id from data
   // Upload image if exists
   if (imageFile) {
     const { imageUrl, imagePath } = await updateImage(null, imageFile);
-    recipe.imageUrl = imageUrl;
-    recipe.imagePath = imagePath;
+    data.imageUrl = imageUrl;
+    data.imagePath = imagePath;
   }
-  recipe.createdBy = currentUser.value?.uid || null;
-  recipe.createdAt = serverTimestamp();
+  data.createdBy = currentUser.value?.uid || null;
+  data.createdAt = serverTimestamp();
   // Add the recipe document
-  return addDoc(collection(db, "recipes"), recipe);
+  return addDoc(collection(db, "recipes"), data);
 }
 
-async function updateRecipe(id, updatedFields) {
+function updateRecipe(id, updatedFields) {
   const { id: _, ...data } = updatedFields; // Exclude id from data
   return setDoc(doc(db, "recipes", id), data, { merge: true });
 }

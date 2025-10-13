@@ -53,7 +53,7 @@ async function getRating(recipeId) {
   return result;
 }
 
-async function setRating(recipeId, value) {
+function setRating(recipeId, value) {
   if (!currentUser.value) throw new Error("User not logged in");
   const docId = `${recipeId}_${currentUser.value.uid}`;
   return setDoc(
@@ -68,7 +68,7 @@ async function setRating(recipeId, value) {
   );
 }
 
-async function clearRating(recipeId) {
+function clearRating(recipeId) {
   if (!currentUser.value) throw new Error("User not logged in");
   const docId = `${recipeId}_${currentUser.value.uid}`;
   return deleteDoc(doc(db, "ratings", docId));

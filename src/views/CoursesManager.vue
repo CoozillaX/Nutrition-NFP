@@ -9,7 +9,7 @@
         label="New"
         icon="pi pi-plus"
         class="mr-2"
-        @click="openModal()"
+        @click="openCourseModal()"
       ></Button>
       <Button label="Export" icon="pi pi-upload" severity="secondary"></Button>
     </template>
@@ -17,7 +17,7 @@
 
   <!-- Course Modal -->
   <Dialog
-    v-model:visible="modalVisible"
+    v-model:visible="courseModalVisible"
     modal
     header="Course Editor"
     :style="{ width: '54rem' }"
@@ -34,10 +34,10 @@
         <StepPanel v-slot="{ activateCallback }" value="1">
           <Form
             v-slot="$form"
-            :initialValues="initialValues"
-            :resolver="formResolver"
+            :initialValues="courseInitialValues"
+            :resolver="courseFormResolver"
             @submit="
-              onFormSubmit(() => {
+              onCourseFormSubmit(() => {
                 activateCallback('2');
               })($event)
             "
@@ -206,19 +206,73 @@
               iconPos="right"
               class="ml-2"
               :loading="submitting"
-              @click="modalVisible = false"
+              @click="courseModalVisible = false"
             ></Button>
           </div>
         </StepPanel>
       </StepPanels>
     </Stepper>
   </Dialog>
+  <!-- Context Menu for FullCalendar -->
+  <Popover ref="cp">
+    <div class="flex flex-col">
+      <div>
+        <i class="pi pi-question-circle mr-2"></i>
+        <span class="mr-3">What do you want to do?</span>
+      </div>
+      <div class="flex justify-end mt-3">
+        <Button
+          label="Edit"
+          icon="pi pi-pencil"
+          class="mr-2"
+          size="small"
+          @click="openCourseSlotModal"
+        ></Button>
+        <Button
+          label="Delete"
+          icon="pi pi-trash"
+          severity="danger"
+          size="small"
+          @click="deleteEvent"
+        ></Button>
+      </div>
+    </div>
+  </Popover>
+  <!-- Course Slot Modal -->
+  <Dialog
+    v-model:visible="courseSlotModalVisible"
+    modal
+    header="Course Slot Editor"
+    :style="{ width: '34rem' }"
+    :draggable="false"
+  >
+    <Form
+      :initialValues="courseSlotInitialValues"
+      @submit="onCourseSlotFormSubmit($event)"
+    >
+      <!-- Capacity -->
+      <div>
+        <label for="capacity" class="form-label">Capacity *</label>
+        <InputNumber
+          name="capacity"
+          :min="1"
+          :max="1000"
+          placeholder="e.g., 20"
+          fluid
+        />
+      </div>
+      <!-- Operations -->
+      <div class="flex pt-6 justify-end">
+        <Button label="Save" type="submit" :loading="submitting"></Button>
+      </div>
+    </Form>
+  </Dialog>
 </template>
 
 <script setup>
 import { ref, reactive, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { getDocs } from "firebase/firestore";
 import {
   MapboxMap,
   MapboxMarker,
@@ -236,8 +290,14 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { addCourse, updateCourse } from "@/firestore/courses";
 import { updateImage } from "@/firestore/utils";
 
+import {
+  generateCourseSlotsQueryByFilters,
+  addCourseSlot,
+  updateCourseSlot,
+  deleteCourseSlot
+} from "@/firestore/courseSlots";
+
 const toast = useToast();
-const confirm = useConfirm();
 
 // Mapbox
 const mapbox_token = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -249,9 +309,20 @@ function onMapClick(event) {
 
 // FullCalendar
 const fc = ref(null);
+const cp = ref(null);
+let currentEvent = null;
 
 const reloadCalendar = () => {
-  nextTick(() => fc.value?.getApi().render());
+  nextTick(() => {
+    fc.value?.getApi().refetchEvents();
+    fc.value?.getApi().render();
+  });
+};
+
+const deleteEvent = () => {
+  currentEvent.remove();
+  fc.value?.getApi().render();
+  cp.value?.hide();
 };
 
 const calendarOptions = {
@@ -269,91 +340,146 @@ const calendarOptions = {
 
   // Load events dynamically
   events(fetchInfo, successCallback, failureCallback) {
-    // console.log(fetchInfo.startStr, fetchInfo.endStr)
-    successCallback([
-      { id: "1", start: "2025-10-13T10:00:00", end: "2025-10-13T12:00:00" },
-      { id: "1", start: "2025-10-14T14:00:00", end: "2025-10-14T16:00:00" }
-    ]);
+    if (!currentCourse.value?.id) {
+      failureCallback("No course selected");
+      return;
+    }
+    // Generate query
+    const query = generateCourseSlotsQueryByFilters({
+      courseId: currentCourse.value.id,
+      start: fetchInfo.start,
+      end: fetchInfo.end
+    });
+    // Fetch data
+    getDocs(query)
+      .then((querySnapshot) => {
+        const events = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          events.push({
+            id: doc.id,
+            title: `Capacity: ${data.capacity}`,
+            start: data.start?.toDate?.() ?? data.start,
+            end: data.end?.toDate?.() ?? data.end,
+            capacity: data.capacity
+          });
+        });
+        successCallback(events);
+      })
+      .catch((err) => {
+        failureCallback(err);
+      });
   },
 
   // Add new event
   select(arg) {
     const api = fc.value.getApi();
-    api.addEvent({
-      id: null,
-      start: arg.start,
-      end: arg.end
-    });
+    // Ensure start and end are on the same day
+    const startDate = arg.startStr.split("T")[0];
+    const endDate = arg.endStr.split("T")[0];
+    if (startDate !== endDate) {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "Course slot must start and end on the same day.",
+        life: 3000
+      });
+    } else {
+      currentEvent = arg;
+      openCourseSlotModal();
+    }
     api.unselect();
   },
 
-  // Delete event
+  // Context menu
   eventClick(arg) {
-    confirm.require({
-      target: arg.jsEvent.target,
-      message: "Do you want to delete this slot?",
-      icon: "pi pi-info-circle",
-      rejectProps: {
-        label: "Cancel",
-        severity: "secondary",
-        outlined: true
-      },
-      acceptProps: {
-        label: "Delete",
-        severity: "danger"
-      },
-      accept: () => {
-        arg.event.remove();
-      }
-    });
-    fc.value?.getApi().render();
+    currentEvent = arg.event;
+    cp.value?.toggle(arg.jsEvent, arg.jsEvent.target);
+  },
+
+  // Update event
+  eventChange(arg) {
+    updateCourseSlot(arg.event.id, {
+      start: arg.event.start,
+      end: arg.event.end,
+      capacity: arg.event.extendedProps.capacity || 1
+    })
+      .then((_) => {
+        toast.add({
+          severity: "success",
+          summary: "Success",
+          detail: "Course slot updated.",
+          life: 3000
+        });
+        fc.value?.getApi().refetchEvents();
+      })
+      .catch((err) => {
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: `Error: ${err.message}`,
+          life: 3000
+        });
+        arg.revert();
+      });
+  },
+
+  // Delete event
+  eventRemove(arg) {
+    deleteCourseSlot(arg.event)
+      .then((_) => {
+        toast.add({
+          severity: "success",
+          summary: "Success",
+          detail: "Course slot deleted.",
+          life: 3000
+        });
+      })
+      .catch((err) => {
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: `Error: ${err.message}`,
+          life: 3000
+        });
+        arg.revert();
+      });
   }
 };
 
-function getAllEvents() {
-  const api = fc.value.getApi();
-  return api.getEvents().map((ev) => {
-    return {
-      id: ev.id,
-      start: ev.start,
-      end: ev.end
-    };
-  });
-}
-
 // Course Modal
 const currentCourse = ref(null);
-const initialValues = reactive({
+const courseInitialValues = reactive({
   name: "",
   summary: "",
   details: ""
 });
 
-const modalVisible = ref(false);
+const courseModalVisible = ref(false);
 const imageData = ref(null);
 const courseLngLat = ref(null);
 const submitting = ref(false);
 
-const openModal = (course) => {
+const openCourseModal = (course) => {
   currentCourse.value = course;
   imageData.value = null;
   if (course) {
     // Edit existing course
-    initialValues.name = course.name;
-    initialValues.summary = course.summary;
-    initialValues.details = course.details;
+    courseInitialValues.name = course.name;
+    courseInitialValues.summary = course.summary;
+    courseInitialValues.details = course.details;
     courseLngLat.value = course.location;
   } else {
     // Create new course
-    initialValues.name = "";
-    initialValues.summary = "";
-    initialValues.details = "";
+    courseInitialValues.name = "";
+    courseInitialValues.summary = "";
+    courseInitialValues.details = "";
     courseLngLat.value = null;
   }
-  modalVisible.value = true;
+  courseModalVisible.value = true;
 };
 
-const formResolver = ({ values }) => {
+const courseFormResolver = ({ values }) => {
   const errors = {};
 
   if (!values.name || !values.name.trim()) {
@@ -390,7 +516,7 @@ function onFileRemove() {
   imageData.value = null;
 }
 
-function onFormSubmit(nextStepFn) {
+function onCourseFormSubmit(nextStepFn) {
   return async ({ valid, values }) => {
     if (!valid) return;
     try {
@@ -457,6 +583,7 @@ function onFormSubmit(nextStepFn) {
   };
 }
 
+// Location Step
 function onLocationSubmit(nextStepFn) {
   updateCourse(currentCourse.value.id, {
     location: courseLngLat.value
@@ -480,6 +607,62 @@ function onLocationSubmit(nextStepFn) {
       });
     });
 }
+
+// Time Slots Modal
+const courseSlotInitialValues = reactive({
+  capacity: 1
+});
+
+const courseSlotModalVisible = ref(false);
+
+const openCourseSlotModal = () => {
+  if (currentEvent?.extendedProps) {
+    // Edit existing slot
+    courseSlotInitialValues.capacity = currentEvent.extendedProps.capacity || 1;
+  } else {
+    // Create new slot
+    courseSlotInitialValues.capacity = 1;
+  }
+  cp.value?.hide();
+  courseSlotModalVisible.value = true;
+};
+
+const onCourseSlotFormSubmit = async ({ valid, values }) => {
+  if (!valid || !currentEvent) return;
+  submitting.value = true;
+
+  try {
+    if (currentEvent.id && currentEvent.id !== "null") {
+      // Update existing slot (only capacity changed)
+      currentEvent.setExtendedProp("capacity", values.capacity);
+    } else {
+      // Add new slot
+      await addCourseSlot({
+        courseId: currentCourse.value.id,
+        start: currentEvent.start,
+        end: currentEvent.end,
+        capacity: values.capacity
+      });
+      toast.add({
+        severity: "success",
+        summary: "Success",
+        detail: "Course slot added.",
+        life: 3000
+      });
+      fc.value?.getApi().refetchEvents();
+    }
+  } catch (err) {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: `Error: ${err.message}`,
+      life: 3000
+    });
+  } finally {
+    courseSlotModalVisible.value = false;
+    submitting.value = false;
+  }
+};
 </script>
 
 <style scoped>
