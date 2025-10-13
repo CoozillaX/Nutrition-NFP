@@ -131,7 +131,6 @@
       </template>
     </Column>
   </DataTable>
-
   <!-- Recipe Modal -->
   <Dialog
     v-model:visible="modalVisible"
@@ -264,28 +263,17 @@ import { ref, reactive, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { FilterMatchMode } from "@primevue/core/api";
+import { addRecipe, updateRecipe, deleteRecipe } from "@/firestore/recipes";
 import {
-  generateRecipesQueryByFilters,
-  addRecipe,
-  updateRecipe,
-  deleteRecipe
-} from "@/firestore/recipes";
-import { fetchByPage, getTotalCount, updateImage } from "@/firestore/utils";
+  generateDatatableQueryByFilters,
+  fetchByPage,
+  getTotalCount,
+  updateImage
+} from "@/firestore/utils";
+import { formatDate } from "@/utils/date";
 
 const toast = useToast();
 const confirm = useConfirm();
-
-function formatDate(timestamp) {
-  if (!timestamp) return "-";
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  return date.toLocaleString("en-AU", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
 
 // Recipes DataTable
 const filters = ref({
@@ -301,7 +289,7 @@ const loading = ref(false);
 
 const rowsPerPage = 10;
 
-let currQuery = generateRecipesQueryByFilters(null);
+let currQuery = generateDatatableQueryByFilters("recipes", null);
 let cursors = [];
 
 async function reloadDataTable() {
@@ -313,7 +301,7 @@ async function reloadDataTable() {
 const onRecipeFilter = (event) => {
   const { filters } = event || {};
   if (filters) {
-    const newQuery = generateRecipesQueryByFilters(filters);
+    const newQuery = generateDatatableQueryByFilters("recipes", filters);
     if (!newQuery) return; // Invalid state, do nothing
     currQuery = newQuery;
     reloadDataTable();
@@ -445,6 +433,11 @@ async function onDialogSubmit({ valid, values }) {
       }
 
       await updateRecipe(values.id, updatedFields);
+      // local update
+      const index = recipesData.value.findIndex((r) => r.id === values.id);
+      if (index !== -1) {
+        recipesData.value[index] = { ...recipesData.value[index], ...updatedFields };
+      }
     } else {
       await addRecipe(
         {
@@ -454,6 +447,7 @@ async function onDialogSubmit({ valid, values }) {
         },
         imageData.value
       );
+      reloadDataTable();
     }
 
     modalVisible.value = false;
@@ -464,8 +458,6 @@ async function onDialogSubmit({ valid, values }) {
       detail: "Recipe updated successfully!",
       life: 3000
     });
-
-    reloadDataTable();
   } catch (err) {
     toast.add({
       severity: "error",
@@ -480,28 +472,6 @@ async function onDialogSubmit({ valid, values }) {
 
 async function confirmDeleteRecipe(event, recipe) {
   if (!recipe || !recipe.id) return;
-  // Function to delete recipe
-  const deleteFunc = async (recipe) => {
-    try {
-      await deleteRecipe(recipe);
-
-      toast.add({
-        severity: "success",
-        summary: "Success",
-        detail: "Recipe deleted successfully!",
-        life: 3000
-      });
-
-      reloadDataTable();
-    } catch (err) {
-      toast.add({
-        severity: "error",
-        summary: "Error",
-        detail: `Error: ${err.message}`,
-        life: 3000
-      });
-    }
-  };
   // Show confirmation dialog
   confirm.require({
     target: event.currentTarget,
@@ -517,7 +487,28 @@ async function confirmDeleteRecipe(event, recipe) {
       severity: "danger"
     },
     accept: () => {
-      deleteFunc(recipe);
+      loading.value = true;
+      deleteRecipe(recipe)
+      .then(() => {
+        toast.add({
+          severity: "success",
+          summary: "Success",
+          detail: "Recipe deleted successfully!",
+          life: 3000
+        });
+        reloadDataTable();
+      })
+      .catch((err) => {
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: `Error: ${err.message}`,
+          life: 3000
+        });
+      })
+      .finally(() => {
+        loading.value = false;
+      });
     }
   });
 }

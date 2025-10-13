@@ -144,8 +144,11 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { currentUser } from "@/firebase/init";
-import { generateRecipesQueryByFilters } from "@/firestore/recipes";
-import { fetchByPage, getTotalCount } from "@/firestore/utils";
+import {
+  generateDatatableQueryByFilters,
+  fetchByPage,
+  getTotalCount
+} from "@/firestore/utils";
 import { getRating, setRating, clearRating } from "@/firestore/ratings";
 
 /* pagination */
@@ -156,7 +159,7 @@ const paginatedRecipes = ref([]);
 const pageSize = 12;
 const totalCount = ref(0);
 
-let currQuery = generateRecipesQueryByFilters(null);
+let currQuery = generateDatatableQueryByFilters("recipes", null);
 let cursors = [];
 
 async function loadPage({ first, page }) {

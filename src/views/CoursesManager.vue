@@ -14,7 +14,118 @@
       <Button label="Export" icon="pi pi-upload" severity="secondary"></Button>
     </template>
   </Toolbar>
+  <!-- Recipes DataTable -->
+  <DataTable
+    tableStyle="min-width: 50rem"
+    lazy
+    paginator
+    filterDisplay="row"
+    :first="first"
+    :value="courseData"
+    :rows="rowsPerPage"
+    :totalRecords="totalRecords"
+    :loading="loading"
+    :filters="filters"
+    @page="onCourseLazyLoad"
+    @filter="onCourseFilter"
+  >
+    <template #empty>
+      <div class="text-center">No courses found</div>
+    </template>
+    <template #loading>
+      <ProgressSpinner aria-label="Loading" />
+    </template>
+    <Column header="Image">
+      <template #body="slotProps">
+        <Image
+          :src="slotProps.data.imageUrl"
+          :alt="slotProps.data.image"
+          width="96"
+          height="96"
+          preview
+        ></Image>
+      </template>
+    </Column>
+    <Column
+      field="name"
+      header="Name"
+      :showFilterMenu="true"
+      :filterMatchModeOptions="[
+        { label: 'Equals', value: FilterMatchMode.EQUALS }
+      ]"
+    >
+      <template #filter="{ filterModel, filterCallback }">
+        <InputText
+          v-model="filterModel.value"
+          type="text"
+          @blur="filterCallback()"
+          placeholder="Filter by name"
+          fluid
+        />
+      </template>
+    </Column>
 
+    <Column
+      field="summary"
+      header="Summary"
+      :showFilterMenu="true"
+      :filterMatchModeOptions="[
+        { label: 'Equals', value: FilterMatchMode.EQUALS }
+      ]"
+    >
+      <template #filter="{ filterModel, filterCallback }">
+        <InputText
+          v-model="filterModel.value"
+          type="text"
+          @blur="filterCallback()"
+          placeholder="Filter by summary"
+          fluid
+        />
+      </template>
+    </Column>
+    <Column
+      field="createdAt"
+      header="Created At"
+      :showFilterMenu="true"
+      :filterMatchModeOptions="[
+        { label: 'Between', value: FilterMatchMode.BETWEEN }
+      ]"
+    >
+      <template #body="slotProps">
+        {{ formatDate(slotProps.data.createdAt) }}
+      </template>
+      <template #filter="{ filterModel, filterCallback }">
+        <DatePicker
+          v-model="filterModel.value"
+          selection-mode="range"
+          date-format="yy-mm-dd"
+          @date-select="filterCallback()"
+          placeholder="Filter by date"
+          :show-icon="true"
+          fluid
+        />
+      </template>
+    </Column>
+    <Column style="width: 10rem">
+      <template #body="slotProps">
+        <Button
+          type="button"
+          icon="pi pi-pencil"
+          rounded
+          severity="success"
+          @click="() => openCourseModal(slotProps.data)"
+        ></Button>
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          severity="danger"
+          class="ms-2"
+          @click="(event) => confirmDeleteCourse(event, slotProps.data)"
+        ></Button>
+      </template>
+    </Column>
+  </DataTable>
   <!-- Course Modal -->
   <Dialog
     v-model:visible="courseModalVisible"
@@ -270,8 +381,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, nextTick } from "vue";
+import { ref, reactive, nextTick, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
+import { FilterMatchMode } from "@primevue/core/api";
 import { getDocs } from "firebase/firestore";
 import {
   MapboxMap,
@@ -287,17 +400,90 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
-import { addCourse, updateCourse } from "@/firestore/courses";
-import { updateImage } from "@/firestore/utils";
-
+import { addCourse, updateCourse, deleteCourse } from "@/firestore/courses";
 import {
   generateCourseSlotsQueryByFilters,
   addCourseSlot,
   updateCourseSlot,
   deleteCourseSlot
 } from "@/firestore/courseSlots";
+import {
+  generateDatatableQueryByFilters,
+  fetchByPage,
+  getTotalCount,
+  updateImage
+} from "@/firestore/utils";
+
+import { formatDate } from "@/utils/date";
 
 const toast = useToast();
+const confirm = useConfirm();
+
+// Courses DataTable
+const filters = ref({
+  name: { value: null, matchMode: FilterMatchMode.EQUALS },
+  summary: { value: null, matchMode: FilterMatchMode.EQUALS },
+  createdAt: { value: null, matchMode: FilterMatchMode.BETWEEN }
+});
+
+const first = ref(0);
+const courseData = ref([]);
+const totalRecords = ref(0);
+const loading = ref(false);
+
+const rowsPerPage = 10;
+
+let currQuery = generateDatatableQueryByFilters("courses", null);
+let cursors = [];
+
+async function reloadDataTable() {
+  cursors = [];
+  totalRecords.value = 0;
+  await onCourseLazyLoad();
+}
+
+const onCourseFilter = (event) => {
+  const { filters } = event || {};
+  if (filters) {
+    const newQuery = generateDatatableQueryByFilters("courses", filters);
+    if (!newQuery) return; // Invalid state, do nothing
+    currQuery = newQuery;
+    reloadDataTable();
+  }
+};
+
+const onCourseLazyLoad = async (event) => {
+  loading.value = true;
+  try {
+    const { page = 0, rows = rowsPerPage } = event?.originalEvent || {};
+
+    // Fetch total count only once
+    if (page === 0 && totalRecords.value === 0) {
+      totalRecords.value = await getTotalCount(currQuery);
+    }
+
+    // Fetch data for the current page
+    const { data, cursors: newCursors } = await fetchByPage(
+      page,
+      currQuery,
+      rows,
+      cursors
+    );
+
+    courseData.value = data;
+    first.value = page * rows;
+    cursors = newCursors;
+  } catch (error) {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: `Error loading courses: ${error.message}`,
+      life: 1000
+    });
+  } finally {
+    loading.value = false;
+  }
+};
 
 // Mapbox
 const mapbox_token = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -382,7 +568,7 @@ const calendarOptions = {
         severity: "error",
         summary: "Error",
         detail: "Course slot must start and end on the same day.",
-        life: 3000
+        life: 1000
       });
     } else {
       currentEvent = arg;
@@ -409,7 +595,7 @@ const calendarOptions = {
           severity: "success",
           summary: "Success",
           detail: "Course slot updated.",
-          life: 3000
+          life: 1000
         });
         fc.value?.getApi().refetchEvents();
       })
@@ -418,7 +604,7 @@ const calendarOptions = {
           severity: "error",
           summary: "Error",
           detail: `Error: ${err.message}`,
-          life: 3000
+          life: 1000
         });
         arg.revert();
       });
@@ -432,7 +618,7 @@ const calendarOptions = {
           severity: "success",
           summary: "Success",
           detail: "Course slot deleted.",
-          life: 3000
+          life: 1000
         });
       })
       .catch((err) => {
@@ -440,7 +626,7 @@ const calendarOptions = {
           severity: "error",
           summary: "Error",
           detail: `Error: ${err.message}`,
-          life: 3000
+          life: 1000
         });
         arg.revert();
       });
@@ -547,6 +733,16 @@ function onCourseFormSubmit(nextStepFn) {
         nextTick(() => {
           currentCourse.value = { ...currentCourse.value, ...updatedFields };
         });
+        // local update in datatable
+        const index = courseData.value.findIndex(
+          (c) => c.id === currentCourse.value.id
+        );
+        if (index !== -1) {
+          courseData.value[index] = {
+            ...courseData.value[index],
+            ...updatedFields
+          };
+        }
       } else {
         // Creating new course
         const courseRef = await addCourse(
@@ -557,6 +753,7 @@ function onCourseFormSubmit(nextStepFn) {
           },
           imageData.value
         );
+        reloadDataTable();
         nextTick(() => {
           currentCourse.value = { id: courseRef.id, ...values };
         });
@@ -566,7 +763,7 @@ function onCourseFormSubmit(nextStepFn) {
         severity: "success",
         summary: "Success",
         detail: "Course basic info saved.",
-        life: 3000
+        life: 1000
       });
 
       nextStepFn();
@@ -575,12 +772,55 @@ function onCourseFormSubmit(nextStepFn) {
         severity: "error",
         summary: "Error",
         detail: `Error: ${err.message}`,
-        life: 3000
+        life: 1000
       });
     } finally {
       submitting.value = false;
     }
   };
+}
+
+function confirmDeleteCourse(event, course) {
+  if (!course || !course.id) return;
+  // Show confirmation dialog
+  confirm.require({
+    target: event.currentTarget,
+    message: "Do you want to delete this course?",
+    icon: "pi pi-info-circle",
+    rejectProps: {
+      label: "Cancel",
+      severity: "secondary",
+      outlined: true
+    },
+    acceptProps: {
+      label: "Delete",
+      severity: "danger"
+    },
+    accept: () => {
+      loading.value = true;
+      deleteCourse(course)
+        .then(() => {
+          toast.add({
+            severity: "success",
+            summary: "Success",
+            detail: "Course deleted successfully!",
+            life: 1000
+          });
+          reloadDataTable();
+        })
+        .catch((err) => {
+          toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: `Error: ${err.message}`,
+            life: 1000
+          });
+        })
+        .finally(() => {
+          loading.value = false;
+        });
+    }
+  });
 }
 
 // Location Step
@@ -593,8 +833,15 @@ function onLocationSubmit(nextStepFn) {
         severity: "success",
         summary: "Success",
         detail: "Course location saved.",
-        life: 3000
+        life: 1000
       });
+      // local update
+      const index = courseData.value.findIndex(
+        (c) => c.id === currentCourse.value.id
+      );
+      if (index !== -1) {
+        courseData.value[index].location = courseLngLat.value;
+      }
       nextStepFn();
       reloadCalendar();
     })
@@ -603,7 +850,7 @@ function onLocationSubmit(nextStepFn) {
         severity: "error",
         summary: "Error",
         detail: `Error: ${err.message}`,
-        life: 3000
+        life: 1000
       });
     });
 }
@@ -647,7 +894,7 @@ const onCourseSlotFormSubmit = async ({ valid, values }) => {
         severity: "success",
         summary: "Success",
         detail: "Course slot added.",
-        life: 3000
+        life: 1000
       });
       fc.value?.getApi().refetchEvents();
     }
@@ -656,13 +903,17 @@ const onCourseSlotFormSubmit = async ({ valid, values }) => {
       severity: "error",
       summary: "Error",
       detail: `Error: ${err.message}`,
-      life: 3000
+      life: 1000
     });
   } finally {
     courseSlotModalVisible.value = false;
     submitting.value = false;
   }
 };
+
+onMounted(() => {
+  onCourseLazyLoad();
+});
 </script>
 
 <style scoped>
