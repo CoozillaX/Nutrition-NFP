@@ -1,7 +1,7 @@
 <template>
   <div
     id="background"
-    class="h-screen flex flex-col items-center justify-center gap-4"
+    class="h-screen flex flex-col items-center text-center justify-center gap-4"
   >
     <h1 class="text-black text-4xl font-bold">Welcome to Nutrition NFP</h1>
 

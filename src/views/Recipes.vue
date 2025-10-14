@@ -3,7 +3,7 @@
     <!-- SearchBar -->
     <div
       id="searchBar"
-      class="flex flex-col items-center justify-center gap-4 h-72"
+      class="flex flex-col items-center text-center justify-center gap-4 h-72"
     >
       <h1 class="text-black text-4xl font-bold">Recipes</h1>
       <p class="text-black">
@@ -251,6 +251,6 @@ onMounted(async () => {
 #searchBar {
   background:
     linear-gradient(rgba(128, 128, 128, 0), rgba(128, 128, 128, 1)),
-    url("@/assets/imgs/bg.jpg") center/cover no-repeat;
+    url("@/assets/imgs/bg-recipe.jpg") center/cover no-repeat;
 }
 </style>
