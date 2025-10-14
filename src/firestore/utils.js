@@ -150,10 +150,45 @@ async function updateImage(currentImagePath, imageFile) {
   return updatedFields;
 }
 
+// Export CSV
+async function exportCSV(filename, currQuery) {
+  // fetch all data without pagination
+  const count = await getTotalCount(currQuery);
+  fetchByPage(0, currQuery, count, []).then(({ data }) => {
+    // get all unique headers  
+    const headers = Array.from(
+      new Set(data.flatMap((r) => Object.keys(r)))
+    );
+    // convert to CSV format
+    const csv = [
+      headers.join(","),
+      ...data.map((r) =>
+        headers
+          .map((h) => {
+            const val = r[h];
+            if (val === undefined || val === null) return "";
+            return `"${String(val).replace(/"/g, '""').replace(/\n/g, " ")}"`;
+          })
+          .join(",")
+      )
+    ].join("\n");
+
+    // download as CSV file
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
 export {
   generateDatatableQueryByFilters,
   getCursorForPage,
   fetchByPage,
   getTotalCount,
-  updateImage
+  updateImage,
+  exportCSV
 };
