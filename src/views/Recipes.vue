@@ -67,78 +67,77 @@
         @page="loadPage"
       />
     </div>
-
-    <!-- Modal -->
-    <Dialog
-      v-model:visible="modalVisible"
-      :header="selected ? selected.name : ''"
-      :modal="true"
-      :dismissableMask="true"
-      :draggable="false"
-      @hide="modalVisible = false"
-      :style="{ width: '90%', maxWidth: '800px' }"
-      class="mx-4"
-    >
-      <!-- Image -->
-      <img
-        v-if="selected?.imageUrl"
-        :alt="selected.name"
-        :src="selected.imageUrl"
-        class="w-full h-112 object-cover mb-4 rounded-lg"
-      />
-      <img v-else class="w-full h-112 object-cover mb-4 rounded-lg" />
-      <!-- Summary -->
-      <p class="mb-4 text-muted-color" v-if="selected?.summary">
-        {{ selected.summary }}
-      </p>
-      <!-- Ratings -->
-      <div class="mb-4">
-        <div class="flex items-center mb-2">
-          <Rating v-model="ratingAvg" readonly />
-          <div class="small text-muted ms-2">
-            <span class="font-semibold">{{ displayAvg }}</span>
-            ·
-            <span>{{ ratingCount }}</span> ratings
-          </div>
-        </div>
-      </div>
-      <!-- Details -->
-      <div v-if="selected?.details" class="mb-4">
-        <h5 class="font-semibold mb-2">Details</h5>
-        <p>
-          {{ selected.details }}
-        </p>
-      </div>
-      <!-- My Rating -->
-      <Divider />
-      <div class="pt-2 space-y-1">
-        <div v-if="currentUser" class="flex items-center">
-          <span class="font-semibold me-3">Your rating</span>
-          <div class="flex items-center">
-            <Rating
-              v-model="myRating"
-              :disabled="ratingSaving"
-              @update:modelValue="setMyRating"
-            />
-            <Button
-              v-if="myRating !== 0"
-              label="Clear"
-              size="small"
-              severity="danger"
-              :disabled="ratingSaving || myRating === 0"
-              @click="clearMyRating"
-              class="ms-3 text-xs"
-            ></Button>
-          </div>
-        </div>
-
-        <div v-else class="flex items-center text-muted-color">
-          <i class="pi pi-info-circle me-2"></i>
-          <span>Sign in to rate this recipe.</span>
-        </div>
-      </div>
-    </Dialog>
   </div>
+  <!-- Modal -->
+  <Dialog
+    v-model:visible="modalVisible"
+    :header="selected ? selected.name : ''"
+    :modal="true"
+    :dismissableMask="true"
+    :draggable="false"
+    @hide="modalVisible = false"
+    :style="{ width: '90%', maxWidth: '800px' }"
+    class="mx-4"
+  >
+    <!-- Image -->
+    <img
+      v-if="selected?.imageUrl"
+      :alt="selected.name"
+      :src="selected.imageUrl"
+      class="w-full h-112 object-cover mb-4 rounded-lg"
+    />
+    <img v-else class="w-full h-112 object-cover mb-4 rounded-lg" />
+    <!-- Summary -->
+    <p class="mb-4 text-muted-color" v-if="selected?.summary">
+      {{ selected.summary }}
+    </p>
+    <!-- Ratings -->
+    <div class="mb-4">
+      <div class="flex items-center mb-2">
+        <Rating v-model="ratingAvg" readonly />
+        <div class="small text-muted ms-2">
+          <span class="font-semibold">{{ displayAvg }}</span>
+          ·
+          <span>{{ ratingCount }}</span> ratings
+        </div>
+      </div>
+    </div>
+    <!-- Details -->
+    <div v-if="selected?.details" class="mb-4">
+      <h5 class="font-semibold mb-2">Details</h5>
+      <p>
+        {{ selected.details }}
+      </p>
+    </div>
+    <!-- My Rating -->
+    <Divider />
+    <div class="pt-2 space-y-1">
+      <div v-if="currentUser" class="flex items-center">
+        <span class="font-semibold me-3">Your rating</span>
+        <div class="flex items-center">
+          <Rating
+            v-model="myRating"
+            :disabled="ratingSaving"
+            @update:modelValue="setMyRating"
+          />
+          <Button
+            v-if="myRating !== 0"
+            label="Clear"
+            size="small"
+            severity="danger"
+            :disabled="ratingSaving || myRating === 0"
+            @click="clearMyRating"
+            class="ms-3 text-xs"
+          ></Button>
+        </div>
+      </div>
+
+      <div v-else class="flex items-center text-muted-color">
+        <i class="pi pi-info-circle me-2"></i>
+        <span>Sign in to rate this recipe.</span>
+      </div>
+    </div>
+  </Dialog>
 </template>
 
 <script setup>
