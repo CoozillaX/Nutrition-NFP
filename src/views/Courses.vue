@@ -94,6 +94,7 @@
       <StepList>
         <Step value="1">Basic Info</Step>
         <Step value="2">Location</Step>
+        <Step value="3">Bookings</Step>
       </StepList>
 
       <StepPanels>
@@ -121,7 +122,6 @@
           <div class="flex justify-end">
             <Button
               label="Next"
-              type="submit"
               icon="pi pi-arrow-right"
               @click="activateCallback('2')"
             ></Button>
@@ -155,12 +155,31 @@
             </div>
           </div>
           <!-- Actions -->
-          <div class="flex justify-start">
+          <div class="flex justify-between">
             <Button
               label="Back"
-              type="submit"
               icon="pi pi-arrow-left"
               @click="activateCallback('1')"
+            ></Button>
+            <Button
+              v-if="currentUser"
+              label="Next"
+              icon="pi pi-arrow-right"
+              @click="onEnterBookingStep(() => activateCallback('3'))"
+            ></Button>
+            <div v-else class="flex items-center text-sm text-muted-color">
+              <i class="pi pi-info-circle me-2"></i>
+              Login is required to book this course.
+            </div>
+          </div>
+        </StepPanel>
+        <StepPanel v-slot="{ activateCallback }" value="3">
+          <FullCalendar ref="fc" :options="calendarOptions" />
+          <div class="flex pt-6 justify-start">
+            <Button
+              label="Back"
+              icon="pi pi-arrow-left"
+              @click="activateCallback('2')"
             ></Button>
           </div>
         </StepPanel>
@@ -170,9 +189,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, nextTick } from "vue";
 import { query, limit, startAfter, getDocs } from "firebase/firestore";
 import { generateDatatableQueryByFilters } from "@/firestore/utils";
+import { currentUser } from "@/firebase/init";
 import {
   MapboxMap,
   MapboxMarker,
@@ -181,6 +201,11 @@ import {
 import MapboxDirections from "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions.css";
+import FullCalendar from "@fullcalendar/vue3";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import { generateCourseSlotsQueryByFilters } from "@/firestore/courseSlots";
 
 // Mapbox
 const mapbox_token = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -195,7 +220,7 @@ function onMapCreated(m) {
     accessToken: mapbox_token,
     unit: "metric",
     profile: "mapbox/driving",
-    interactive: false,
+    interactive: false
   });
 
   mapInstance.value.addControl(directions, "top-left");
@@ -276,6 +301,69 @@ async function openCourseModal(course) {
   selected.value = course;
   modalVisible.value = true;
 }
+
+// FullCalendar
+const fc = ref(null);
+
+const reloadCalendar = () => {
+  nextTick(() => {
+    fc.value?.getApi().refetchEvents();
+    fc.value?.getApi().render();
+  });
+};
+
+const onEnterBookingStep = (activateCallback) => {
+  activateCallback();
+  reloadCalendar();
+};
+
+const calendarOptions = {
+  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+  initialView: "timeGridWeek",
+  allDaySlot: false,
+  slotMinTime: "08:00:00",
+  slotMaxTime: "22:00:00",
+  eventOverlap: false,
+  selectOverlap: false,
+
+  // Load events dynamically
+  events(fetchInfo, successCallback, failureCallback) {
+    if (!selected.value?.id) {
+      failureCallback("No course selected");
+      return;
+    }
+    // Generate query
+    const query = generateCourseSlotsQueryByFilters({
+      courseId: selected.value.id,
+      start: fetchInfo.start,
+      end: fetchInfo.end
+    });
+    // Fetch data
+    getDocs(query)
+      .then((querySnapshot) => {
+        const events = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          events.push({
+            id: doc.id,
+            title: `Capacity: ${data.capacity}`,
+            start: data.start?.toDate?.() ?? data.start,
+            end: data.end?.toDate?.() ?? data.end,
+            capacity: data.capacity
+          });
+        });
+        successCallback(events);
+      })
+      .catch((err) => {
+        failureCallback(err);
+      });
+  },
+
+  // Context menu
+  eventClick(arg) {
+    console.log(arg);
+  }
+};
 
 onMounted(async () => {
   await loadPage();

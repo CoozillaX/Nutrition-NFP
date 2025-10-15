@@ -19,7 +19,7 @@
       <StepList>
         <Step value="1">Basic Info</Step>
         <Step value="2">Location</Step>
-        <Step value="3">Time Slots</Step>
+        <Step value="3">Bookings</Step>
       </StepList>
 
       <StepPanels>
