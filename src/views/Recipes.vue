@@ -70,14 +70,14 @@
   </div>
   <!-- Modal -->
   <Dialog
+    class="mx-4"
     v-model:visible="modalVisible"
     :header="selected ? selected.name : ''"
     :modal="true"
     :dismissableMask="true"
     :draggable="false"
-    @hide="modalVisible = false"
     :style="{ width: '90%', maxWidth: '800px' }"
-    class="mx-4"
+    @hide="modalVisible = false"
   >
     <!-- Image -->
     <img
