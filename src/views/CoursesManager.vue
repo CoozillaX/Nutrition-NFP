@@ -365,6 +365,18 @@ const calendarOptions = {
   // Add new event
   select(arg) {
     const api = fc.value.getApi();
+    // Ensure start is in the future
+    const now = new Date();
+    if (arg.start < now) {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "Start time must be in the future.",
+        life: 1000
+      });
+      api.unselect();
+      return;
+    }
     // Ensure start and end are on the same day
     const startDate = arg.startStr.split("T")[0];
     const endDate = arg.endStr.split("T")[0];
@@ -372,7 +384,7 @@ const calendarOptions = {
       toast.add({
         severity: "error",
         summary: "Error",
-        detail: "Course slot must start and end on the same day.",
+        detail: "Start and end must be on the same day.",
         life: 1000
       });
     } else {
