@@ -40,13 +40,21 @@
         @click="openRecipeModal(course)"
       >
         <template #header>
-          <img
-            v-if="course.imageUrl"
-            :alt="course.name"
-            :src="course.imageUrl"
-            class="w-full h-48 object-cover"
-          />
-          <img v-else class="w-full h-48 object-cover" />
+          <div class="relative">
+            <img
+              v-if="course.imageUrl"
+              :alt="course.name"
+              :src="course.imageUrl"
+              class="w-full h-48 object-cover"
+            />
+            <img v-else class="w-full h-48 object-cover" />
+            <Tag
+              :value="course.location ? 'In-Person' : 'Online'"
+              class="absolute top-2 right-2"
+              :severity="course.location ? 'info' : 'success'"
+              rounded
+            />
+          </div>
         </template>
         <template #title>
           <h5 class="font-semibold text-lg">

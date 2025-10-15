@@ -247,7 +247,7 @@ async function onDialogSubmit({ valid, values }) {
         },
         imageData.value
       );
-      reloadDataTable();
+      dataTable?.value?.reload();
     }
 
     modalVisible.value = false;
