@@ -37,16 +37,18 @@
         style="overflow: hidden"
         :key="recipe.id"
         class="cursor-pointer"
+        tabindex="0"
         @click="openRecipeModal(recipe)"
+        @keydown.enter.prevent="openRecipeModal(recipe)"
       >
         <template #header>
           <img
             v-if="recipe.imageUrl"
-            :alt="recipe.name"
             :src="recipe.imageUrl"
+            alt=""
             class="w-full h-48 object-cover"
           />
-          <img v-else class="w-full h-48 object-cover" />
+          <img v-else class="w-full h-48 object-cover" alt=""/>
         </template>
         <template #title>
           <h5 class="font-semibold text-lg">
@@ -60,11 +62,15 @@
         </template>
       </Card>
       <Paginator
+        ref="paginator"
         class="col-span-full"
+        tabindex="0"
         :first="offset"
         :rows="pageSize"
         :totalRecords="totalCount"
         @page="loadPage"
+        @keydown.left.prevent="paginator?.changePageToPrev(e)"
+        @keydown.right.prevent="paginator?.changePageToNext(e)"
       />
     </div>
   </div>
@@ -82,11 +88,11 @@
     <!-- Image -->
     <img
       v-if="selected?.imageUrl"
-      :alt="selected.name"
       :src="selected.imageUrl"
+      alt=""
       class="w-full h-112 object-cover mb-4 rounded-lg"
     />
-    <img v-else class="w-full h-112 object-cover mb-4 rounded-lg" />
+    <img v-else class="w-full h-112 object-cover mb-4 rounded-lg" alt=""/>
     <!-- Summary -->
     <p class="mb-4 text-muted-color" v-if="selected?.summary">
       {{ selected.summary }}
@@ -126,6 +132,7 @@
             size="small"
             severity="danger"
             :disabled="ratingSaving || myRating === 0"
+            tabindex="0"
             @click="clearMyRating"
             class="ms-3 text-xs"
           ></Button>
@@ -149,6 +156,8 @@ import {
   getTotalCount
 } from "@/firestore/utils";
 import { getRating, setRating, clearRating } from "@/firestore/ratings";
+
+const paginator = ref(null);
 
 /* pagination */
 const loading = ref(true);

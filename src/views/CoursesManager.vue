@@ -100,16 +100,18 @@
                     width="96"
                     height="96"
                     preview
+                    tabindex="0"
                   ></Image>
                   <Button
                     type="button"
                     label="Remove"
                     icon="pi pi-times"
                     severity="danger"
-                    outlined
-                    @click="onFileRemove"
-                    :disabled="submitting"
                     size="small"
+                    tabindex="0"
+                    outlined
+                    :disabled="submitting"
+                    @click="onFileRemove"
                   ></Button>
                 </div>
               </div>
@@ -138,6 +140,7 @@
                 label="Next"
                 type="submit"
                 icon="pi pi-arrow-right"
+                tabindex="0"
                 :loading="submitting"
               ></Button>
             </div>
@@ -172,6 +175,7 @@
               label="Clear"
               icon="pi pi-trash"
               severity="danger"
+              tabindex="0"
               outlined
               @click="courseLngLat = null"
             ></Button>
@@ -181,6 +185,7 @@
               label="Next"
               icon="pi pi-arrow-right"
               iconPos="right"
+              tabindex="0"
               @click="
                 onLocationSubmit(() => {
                   activateCallback('3');
@@ -197,6 +202,7 @@
               icon="pi pi-check"
               iconPos="right"
               class="ml-2"
+              tabindex="0"
               :loading="submitting"
               @click="courseModalVisible = false"
             ></Button>
@@ -214,10 +220,12 @@
       </div>
       <div class="flex justify-end mt-3">
         <Button
+          id="cp-edit-btn"
           label="Edit"
           icon="pi pi-pencil"
           class="mr-2"
           size="small"
+          tabindex="0"
           @click="openCourseSlotModal"
         ></Button>
         <Button
@@ -225,6 +233,7 @@
           icon="pi pi-trash"
           severity="danger"
           size="small"
+          tabindex="0"
           @click="deleteEvent"
         ></Button>
       </div>
@@ -255,7 +264,12 @@
       </div>
       <!-- Operations -->
       <div class="flex pt-6 justify-end">
-        <Button label="Save" type="submit" :loading="submitting"></Button>
+        <Button
+          label="Save"
+          type="submit"
+          tabindex="0"
+          :loading="submitting"
+        ></Button>
       </div>
     </Form>
   </Dialog>
@@ -326,6 +340,7 @@ const calendarOptions = {
   selectMirror: true,
   editable: true,
   eventResizableFromStart: true,
+  eventInteractive: true,
   eventOverlap: false,
   selectOverlap: false,
 
@@ -398,6 +413,9 @@ const calendarOptions = {
   eventClick(arg) {
     currentEvent = arg.event;
     cp.value?.toggle(arg.jsEvent, arg.jsEvent.target);
+    nextTick(() => {
+      document.getElementById("cp-edit-btn")?.focus();
+    });
   },
 
   // Update event

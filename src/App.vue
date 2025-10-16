@@ -5,7 +5,9 @@ import Planner from "@/components/Planner.vue";
 </script>
 
 <template>
-  <Navibar></Navibar>
+  <nav>
+    <Navibar></Navibar>
+  </nav>
   <main>
     <router-view></router-view>
   </main>

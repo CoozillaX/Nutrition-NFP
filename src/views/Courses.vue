@@ -35,19 +35,21 @@
       <Card
         v-for="course in courses"
         style="overflow: hidden"
-        :key="course.id"
         class="cursor-pointer"
+        tabindex="0"
+        :key="course.id"
         @click="openCourseModal(course)"
+        @keydown.enter.prevent="openCourseModal(course)"
       >
         <template #header>
           <div class="relative">
             <img
               v-if="course.imageUrl"
-              :alt="course.name"
               :src="course.imageUrl"
               class="w-full h-48 object-cover"
+              alt=""
             />
-            <img v-else class="w-full h-48 object-cover" />
+            <img v-else class="w-full h-48 object-cover" alt="" />
             <Tag
               :value="course.location ? 'In-Person' : 'Online'"
               class="absolute top-2 right-2"
@@ -73,9 +75,10 @@
         v-if="courses.length != 0 && hasMore"
         label="Load More"
         severity="secondary"
+        class="w-full sm:w-auto"
+        tabindex="0"
         :loading="loading"
         @click="loadPage"
-        class="w-full sm:w-auto"
       ></Button>
     </div>
   </div>
@@ -102,11 +105,15 @@
           <!-- Image -->
           <img
             v-if="selected?.imageUrl"
-            :alt="selected.name"
             :src="selected.imageUrl"
+            alt=""
             class="w-full h-112 object-cover mb-4 rounded-lg"
           />
-          <img v-else class="w-full h-112 object-cover mb-4 rounded-lg" />
+          <img
+            v-else
+            class="w-full h-112 object-cover mb-4 rounded-lg"
+            alt=""
+          />
           <!-- Summary -->
           <p class="mb-4 text-muted-color" v-if="selected?.summary">
             {{ selected.summary }}
@@ -123,6 +130,7 @@
             <Button
               label="Next"
               icon="pi pi-arrow-right"
+              tabindex="0"
               @click="activateCallback('2')"
             ></Button>
           </div>
@@ -159,12 +167,14 @@
             <Button
               label="Back"
               icon="pi pi-arrow-left"
+              tabindex="0"
               @click="activateCallback('1')"
             ></Button>
             <Button
               v-if="currentUser"
               label="Next"
               icon="pi pi-arrow-right"
+              tabindex="0"
               @click="onEnterBookingStep(() => activateCallback('3'))"
             ></Button>
             <div v-else class="flex items-center text-sm text-muted-color">
@@ -179,6 +189,7 @@
             <Button
               label="Back"
               icon="pi pi-arrow-left"
+              tabindex="0"
               @click="activateCallback('2')"
             ></Button>
           </div>
@@ -198,6 +209,7 @@
       </div>
       <div class="flex justify-end mt-3">
         <Button
+          id="cp-btn"
           label="Yes"
           icon="pi pi-check"
           size="small"
@@ -356,6 +368,7 @@ const calendarOptions = {
   slotMaxTime: "22:00:00",
   eventOverlap: false,
   selectOverlap: false,
+  eventInteractive: true,
 
   // Load events dynamically
   events(fetchInfo, successCallback, failureCallback) {
@@ -393,10 +406,11 @@ const calendarOptions = {
   // Context menu
   async eventClick(arg) {
     currentEvent = arg.event;
-    currentEventIsBooked.value = await isBooked(
-      arg.event.id
-    );
+    currentEventIsBooked.value = await isBooked(arg.event.id);
     cp.value?.toggle(arg.jsEvent, arg.jsEvent.target);
+    nextTick(() => {
+      document.getElementById("cp-btn")?.focus();
+    });
   }
 };
 

@@ -66,7 +66,12 @@
       </div>
       <!-- Actions -->
       <div class="mt-3 gap-2 flex">
-        <Button type="submit" label="Submit" :disabled="submitting"></Button>
+        <Button
+          type="submit"
+          label="Submit"
+          tabindex="0"
+          :disabled="submitting"
+        ></Button>
       </div>
     </Form>
   </Dialog>

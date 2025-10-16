@@ -11,10 +11,18 @@
 
     <div class="flex justify-center gap-4">
       <router-link to="/courses">
-        <Button label="Browse Courses" severity="contrast"></Button>
+        <Button
+          label="Browse Courses"
+          severity="contrast"
+          tabindex="0"
+        ></Button>
       </router-link>
       <router-link to="/recipes">
-        <Button label="Explore Recipes" severity="secondary"></Button>
+        <Button
+          label="Explore Recipes"
+          severity="secondary"
+          tabindex="0"
+        ></Button>
       </router-link>
     </div>
   </div>
@@ -22,10 +30,8 @@
 
 <style scoped>
 #background {
-  background: linear-gradient(
-      rgba(128,128,128,0),
-      rgba(128,128,128,1)
-    ),
-    url('@/assets/imgs/bg.jpg') center/cover no-repeat;
+  background:
+    linear-gradient(rgba(128, 128, 128, 0), rgba(128, 128, 128, 1)),
+    url("@/assets/imgs/bg.jpg") center/cover no-repeat;
 }
 </style>

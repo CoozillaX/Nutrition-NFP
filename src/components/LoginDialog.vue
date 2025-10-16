@@ -49,10 +49,16 @@
       </div>
       <!-- Actions -->
       <div class="mt-3 gap-2 flex">
-        <Button type="submit" label="Submit" :disabled="submitting"></Button>
+        <Button
+          type="submit"
+          label="Submit"
+          :disabled="submitting"
+          tabindex="0"
+        ></Button>
         <Button
           label="No account?"
           variant="link"
+          tabindex="0"
           @click="switchToRegister"
         ></Button>
       </div>

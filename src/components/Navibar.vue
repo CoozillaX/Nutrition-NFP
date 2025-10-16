@@ -1,10 +1,10 @@
 <template>
-  <Menubar :model="navbarItems">
+  <Menubar :model="filteredNavbarItems">
     <template #start>
       <router-link to="/" class="flex items-center gap-2">
         <img
           src="@/assets/imgs/logo.svg"
-          alt="Nutrition NFP"
+          alt="logo"
           class="h-10 w-auto"
         />
         <h4 class="font-bold">Nutrition NFP</h4>
@@ -12,7 +12,6 @@
     </template>
     <template #item="{ item, props, hasSubmenu, root }">
       <router-link
-        v-if="!item.adminOnly || (item.adminOnly && currentRole == 'admin')"
         class="flex items-center"
         v-bind="props.action"
         :to="item.to || ''"
@@ -33,7 +32,9 @@
         v-if="!currentUser"
         label="Login"
         icon="pi pi-sign-in"
-        class="p-button-text h-10"
+        class="h-10"
+        severity="contrast"
+        tabindex="0"
         @click="showLoginDialog"
       ></Button>
       <div v-else>
@@ -41,8 +42,10 @@
           icon="pi pi-user"
           shape="circle"
           @click="toggleAvatar"
-          aria-haspopup="true"
+          aria-haspopup="menu"
           aria-controls="userMenu"
+          @keydown.enter.prevent="toggleAvatar"
+          tabindex="0"
           class="cursor-pointer h-10"
         />
         <Menu
@@ -82,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { currentUser, currentRole, logout } from "@/firebase/init";
 import { useToast } from "primevue/usetoast";
@@ -117,6 +120,19 @@ const navbarItems = ref([
     adminOnly: true
   }
 ]);
+
+function filterMenu(items, isAdmin) {
+  return items
+    .filter(item => !item.adminOnly || isAdmin)
+    .map(item => ({
+      ...item,
+      items: item.items ? filterMenu(item.items, isAdmin) : undefined
+    }));
+}
+
+const filteredNavbarItems = computed(() =>
+  filterMenu(navbarItems.value, currentRole.value === "admin")
+);
 
 const userMenuItems = ref([
   {

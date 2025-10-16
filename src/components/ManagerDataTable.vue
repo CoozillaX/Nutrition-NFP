@@ -9,18 +9,21 @@
         label="New"
         icon="pi pi-plus"
         class="mr-2"
+        tabindex="0"
         @click="onModalOpen()"
       ></Button>
       <Button
         label="Export"
         icon="pi pi-upload"
         severity="secondary"
+        tabindex="0"
         @click="onExportCSV"
       ></Button>
     </template>
   </Toolbar>
   <!-- DataTable -->
   <DataTable
+    ref="dt"
     tableStyle="min-width: 50rem"
     filterDisplay="row"
     lazy
@@ -49,7 +52,6 @@
           height="96"
           preview
           :src="slotProps.data.imageUrl"
-          :alt="slotProps.data.image"
         ></Image>
       </template>
     </Column>
@@ -118,6 +120,7 @@
           type="button"
           icon="pi pi-pencil"
           severity="success"
+          tabindex="0"
           rounded
           @click="() => onModalOpen(slotProps.data)"
         ></Button>
@@ -126,6 +129,7 @@
           icon="pi pi-trash"
           severity="danger"
           class="ms-2"
+          tabindex="0"
           rounded
           @click="(event) => confirmDelete(event, slotProps.data)"
         ></Button>
@@ -146,6 +150,8 @@ import {
   exportCSV
 } from "@/firestore/utils";
 import { formatDate } from "@/utils/date";
+
+const dt = ref(null);
 
 // Props
 const props = defineProps({
@@ -305,5 +311,7 @@ defineExpose({
 // Initial load
 onMounted(() => {
   reload();
+  dt.value?.$el?.querySelector(".p-paginator-prev")?.setAttribute("tabindex", "0");
+  dt.value?.$el?.querySelector(".p-paginator-next")?.setAttribute("tabindex", "0");
 });
 </script>
