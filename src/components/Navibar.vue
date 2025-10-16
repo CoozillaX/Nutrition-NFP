@@ -1,12 +1,8 @@
 <template>
   <Menubar :model="filteredNavbarItems">
     <template #start>
-      <router-link to="/" class="flex items-center gap-2">
-        <img
-          src="@/assets/imgs/logo.svg"
-          alt="logo"
-          class="h-10 w-auto"
-        />
+      <router-link to="/" class="flex items-center gap-2" tabindex="0">
+        <img src="@/assets/imgs/logo.svg" alt="logo" class="h-10 w-auto" />
         <h4 class="font-bold">Nutrition NFP</h4>
       </router-link>
     </template>
@@ -123,8 +119,8 @@ const navbarItems = ref([
 
 function filterMenu(items, isAdmin) {
   return items
-    .filter(item => !item.adminOnly || isAdmin)
-    .map(item => ({
+    .filter((item) => !item.adminOnly || isAdmin)
+    .map((item) => ({
       ...item,
       items: item.items ? filterMenu(item.items, isAdmin) : undefined
     }));
