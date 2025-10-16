@@ -1,6 +1,7 @@
 <script setup>
 import Navibar from "@/components/Navibar.vue";
 import Footer from "@/components/Footer.vue";
+import Planner from "@/components/Planner.vue";
 </script>
 
 <template>
@@ -13,6 +14,9 @@ import Footer from "@/components/Footer.vue";
   </footer>
   <Toast position="bottom-right" />
   <ConfirmPopup></ConfirmPopup>
+  <div class="fixed bottom-0 right-0">
+    <Planner />
+  </div>
 </template>
 
 <style scoped></style>

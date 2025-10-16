@@ -108,11 +108,6 @@ const navbarItems = ref([
     to: "/recipes"
   },
   {
-    label: "Planner",
-    icon: "pi pi-calendar",
-    to: "/planner"
-  },
-  {
     label: "Management",
     icon: "pi pi-cog",
     items: [
