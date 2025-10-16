@@ -60,10 +60,16 @@ service cloud.firestore {
         && request.auth.token.role == "admin";
     }
 
-    // default deny writes elsewhere
+    // Bookings
+    match /bookings/{bookingId} {
+      allow read, delete: if request.auth != null
+        && (resource.data.userId == request.auth.uid
+            || request.auth.token.role == "admin");
+    }
+
+    // default deny elsewhere
     match /{document=**} {
-      allow read: if true;
-      allow write: if false;
+      allow read, write: if false;
     }
   }
 }

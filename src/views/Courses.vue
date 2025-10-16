@@ -186,10 +186,33 @@
       </StepPanels>
     </Stepper>
   </Dialog>
+  <!-- Context Menu for FullCalendar -->
+  <Popover ref="cp">
+    <div class="flex flex-col">
+      <div>
+        <i class="pi pi-question-circle mr-2"></i>
+        <span v-if="currentEventIsBooked" class="mr-3"
+          >Do you want to cancel your booking?</span
+        >
+        <span v-else class="mr-3">Do you want to book this course slot?</span>
+      </div>
+      <div class="flex justify-end mt-3">
+        <Button
+          label="Yes"
+          icon="pi pi-check"
+          size="small"
+          :severity="currentEventIsBooked ? 'danger' : 'success'"
+          :loading="popoverLoading"
+          @click="onPopoverConfirm"
+        ></Button>
+      </div>
+    </div>
+  </Popover>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick } from "vue";
+import { useToast } from "primevue/usetoast";
 import { query, limit, startAfter, getDocs } from "firebase/firestore";
 import { generateDatatableQueryByFilters } from "@/firestore/utils";
 import { currentUser } from "@/firebase/init";
@@ -206,6 +229,9 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { generateCourseSlotsQueryByFilters } from "@/firestore/courseSlots";
+import { isBooked, addBooking, deleteBooking } from "@/firestore/bookings";
+
+const toast = useToast();
 
 // Mapbox
 const mapbox_token = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -304,6 +330,11 @@ async function openCourseModal(course) {
 
 // FullCalendar
 const fc = ref(null);
+const cp = ref(null);
+
+let currentEvent = null;
+const currentEventIsBooked = ref(false);
+const popoverLoading = ref(false);
 
 const reloadCalendar = () => {
   nextTick(() => {
@@ -360,8 +391,43 @@ const calendarOptions = {
   },
 
   // Context menu
-  eventClick(arg) {
-    console.log(arg);
+  async eventClick(arg) {
+    currentEvent = arg.event;
+    currentEventIsBooked.value = await isBooked(
+      arg.event.id
+    );
+    cp.value?.toggle(arg.jsEvent, arg.jsEvent.target);
+  }
+};
+
+const onPopoverConfirm = async () => {
+  popoverLoading.value = true;
+  try {
+    if (currentEventIsBooked.value) {
+      // Cancel booking
+      await deleteBooking(currentEvent.id);
+    } else {
+      // Add booking
+      await addBooking(currentEvent.id);
+    }
+    toast.add({
+      severity: "success",
+      summary: "Success",
+      detail: currentEventIsBooked.value
+        ? "Booking cancelled"
+        : "Booking added",
+      life: 1000
+    });
+  } catch (error) {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: `Error: ${error?.response?.data || error.message}`,
+      life: 1000
+    });
+  } finally {
+    popoverLoading.value = false;
+    cp.value?.hide();
   }
 };
 
