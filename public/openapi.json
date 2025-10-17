@@ -3,7 +3,7 @@
   "info": { "title": "Nutrition NFP OpenAPI" },
   "servers": [
     {
-      "url": "https://australia-southeast1-fit5032-assessments.cloudfunctions.net/openapi"
+      "url": "https://openapi-yk7yu5onja-ts.a.run.app"
     }
   ],
   "paths": {
