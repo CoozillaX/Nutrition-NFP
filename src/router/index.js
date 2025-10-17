@@ -6,6 +6,7 @@ import Courses from "@/views/Courses.vue";
 import Recipes from "@/views/Recipes.vue";
 import RecipesManager from "@/views/RecipesManager.vue";
 import CoursesManager from "@/views/CoursesManager.vue";
+import OpenAPI from "@/views/OpenAPI.vue";
 
 const beforeEnterAdmin = (_to, _from, next) => {
   if (currentRole.value !== "admin") {
@@ -19,6 +20,7 @@ const routes = [
   { path: "/", name: "Home", component: Home },
   { path: "/courses", name: "Courses", component: Courses },
   { path: "/recipes", name: "Recipes", component: Recipes },
+  { path: "/openapi", name: "OpenAPI", component: OpenAPI },
   {
     path: "/courses-manager",
     name: "CoursesManager",

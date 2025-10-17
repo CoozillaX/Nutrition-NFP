@@ -29,6 +29,8 @@
     "mapbox-gl": "^3.15.0",
     "primeicons": "^7.0.0",
     "primevue": "^4.4.1",
+    "swagger-ui": "^5.29.4",
+    "swagger-ui-dist": "^5.29.4",
     "tailwindcss-primeui": "^0.6.1",
     "vue": "^3.5.18",
     "vue-router": "^4.5.1"

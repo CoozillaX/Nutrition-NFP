@@ -50,6 +50,14 @@
               >Accessibility Statement</a
             >
           </li>
+          <li>
+            <router-link
+              to="/openapi"
+              class="hover:text-primary-500"
+              tabindex="0"
+              >OpenAPI</router-link
+            >
+          </li>
         </ul>
       </div>
 
