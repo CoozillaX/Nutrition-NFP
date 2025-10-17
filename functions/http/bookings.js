@@ -12,12 +12,12 @@ const slotCollection = db.collection("courseSlots");
 const bookingCollection = db.collection("bookings");
 
 // Add Booking
-bookingsRouter.post("/add", async (req, res) => {
+bookingsRouter.get("/add", async (req, res) => {
   const uid = req.user.uid;
   const email = req.user.email;
 
   // Parsing slotId from request body
-  const { slotId } = req.body;
+  const slotId = req.query.slotId;
   if (!slotId) {
     return res.status(400).send("slotId is required");
   }

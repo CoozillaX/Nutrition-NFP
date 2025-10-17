@@ -1,6 +1,4 @@
-// functions/http/api.js
 const express = require("express");
-const functions = require("firebase-functions");
 const cors = require("cors");
 const auth = require("../middleware/auth");
 

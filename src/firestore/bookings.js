@@ -34,17 +34,13 @@ async function addBooking(slotId) {
   if (!idToken) {
     return Promise.reject(new Error("User not authenticated"));
   }
-  return axios.post(
-    `${functionUrl}/bookings/add`,
-    {
-      slotId
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${idToken}`
-      }
+
+  return axios.get(`${functionUrl}/bookings/add`, {
+    params: { slotId },
+    headers: {
+      Authorization: `Bearer ${idToken}`
     }
-  );
+  });
 }
 
 async function deleteBooking(slotId) {
