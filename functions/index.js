@@ -28,3 +28,4 @@ setGlobalOptions({
 // https://firebase.google.com/docs/functions/get-started
 
 exports.api = https.onRequest(require("./http/api"));
+exports.openapi = https.onRequest(require("./http/openapi"));
