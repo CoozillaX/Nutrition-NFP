@@ -575,7 +575,7 @@ function onCourseFormSubmit(nextStepFn) {
         });
       } else {
         // Creating new course
-        const courseRef = await addCourse(
+        const courseId = await addCourse(
           {
             name: values.name.trim(),
             summary: values.summary.trim(),
@@ -585,7 +585,7 @@ function onCourseFormSubmit(nextStepFn) {
         );
         dataTable?.value?.reload();
         nextTick(() => {
-          currentCourse.value = { id: courseRef.id, ...values };
+          currentCourse.value = { id: courseId, ...values };
         });
       }
 

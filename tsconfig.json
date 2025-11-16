@@ -16,9 +16,8 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
-    "src/**/*.tsx",
     "src/**/*.vue",
-    "env.d.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "global.d.ts"
   ]
 }
