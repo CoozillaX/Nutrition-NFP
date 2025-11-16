@@ -9,8 +9,7 @@ import {
   getCountFromServer
 } from "firebase/firestore";
 import { FilterMatchMode } from "@primevue/core/api";
-import { db } from "@/firebase/init";
-import { uploadImage, deleteImage } from "@/firebase/uploader";
+import { db, uploadImage, deleteImage } from "@/firebase/storage";
 
 function generateDatatableQueryByFilters(collectionName, filters) {
   let newQuery = query(collection(db, collectionName), orderBy("createdAt"));

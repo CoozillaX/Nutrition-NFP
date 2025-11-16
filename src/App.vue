@@ -1,9 +1,3 @@
-<script setup>
-import Navibar from "@/components/Navibar.vue";
-import Footer from "@/components/Footer.vue";
-import Planner from "@/components/Planner.vue";
-</script>
-
 <template>
   <nav>
     <Navibar></Navibar>
@@ -20,5 +14,11 @@ import Planner from "@/components/Planner.vue";
     <Planner />
   </div>
 </template>
+
+<script setup lang="ts">
+import Navibar from "@/components/Navibar.vue";
+import Footer from "@/components/Footer.vue";
+import Planner from "@/components/Planner.vue";
+</script>
 
 <style scoped></style>

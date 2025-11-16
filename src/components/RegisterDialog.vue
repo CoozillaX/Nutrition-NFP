@@ -80,7 +80,7 @@
 <script setup>
 import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
-import { register } from "@/firebase/init";
+import { register } from "@/firebase/auth";
 
 const props = defineProps({
   showLoginDialog: Function
@@ -136,30 +136,31 @@ const registerFormResolver = async ({ values }) => {
   };
 };
 
-const submitRegisterForm = async ({ valid, values }) => {
+const submitRegisterForm = ({ valid, values }) => {
   if (!valid) return;
   submitting.value = true;
-
-  let res = await register(values.email, values.password);
-  if (res.success) {
-    toast.add({
-      severity: "success",
-      summary: "Success",
-      detail: "Registration successful!",
-      life: 3000
+  register(values.email, values.password)
+    .then(() => {
+      toast.add({
+        severity: "success",
+        summary: "Success",
+        detail: "Registration successful!",
+        life: 3000
+      });
+      visible.value = false;
+      props.showLoginDialog();
+    })
+    .catch((err) => {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: err.message,
+        life: 3000
+      });
+    })
+    .finally(() => {
+      submitting.value = false;
     });
-    visible.value = false;
-    props.showLoginDialog();
-  } else {
-    toast.add({
-      severity: "error",
-      summary: "Error",
-      detail: res.error.message,
-      life: 3000
-    });
-  }
-
-  submitting.value = false;
 };
 
 function show() {

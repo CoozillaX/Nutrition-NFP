@@ -61,7 +61,7 @@
                   {{ currentUser?.displayName || currentUser?.email }}
                 </div>
                 <div class="text-sm text-muted-color">
-                  {{ currentRole || "User" }}
+                  {{ isAdminUser ? "Admin" : "User" }}
                 </div>
               </div>
             </button>
@@ -83,7 +83,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
-import { currentUser, currentRole, logout } from "@/firebase/init";
+import { currentUser, isAdminUser, logout } from "@/firebase/auth";
 import { useToast } from "primevue/usetoast";
 import LoginDialog from "@/components/LoginDialog.vue";
 import RegisterDialog from "@/components/RegisterDialog.vue";
@@ -127,31 +127,32 @@ function filterMenu(items, isAdmin) {
 }
 
 const filteredNavbarItems = computed(() =>
-  filterMenu(navbarItems.value, currentRole.value === "admin")
+  filterMenu(navbarItems.value, isAdminUser.value)
 );
 
 const userMenuItems = ref([
   {
     label: "Logout",
     icon: "pi pi-sign-out",
-    command: async () => {
-      const res = await logout();
-      if (res.success) {
-        toast.add({
-          severity: "success",
-          summary: "Success",
-          detail: "Logout successful!",
-          life: 3000
+    command: () => {
+      logout()
+        .then(() => {
+          toast.add({
+            severity: "success",
+            summary: "Success",
+            detail: "Logout successful!",
+            life: 3000
+          });
+          router.push("/");
+        })
+        .catch((err) => {
+          toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+            life: 3000
+          });
         });
-        router.push("/");
-      } else {
-        toast.add({
-          severity: "error",
-          summary: "Error",
-          detail: res.error.message,
-          life: 3000
-        });
-      }
     }
   }
 ]);

@@ -149,7 +149,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { currentUser } from "@/firebase/init";
+import { currentUser } from "@/firebase/auth";
 import {
   generateDatatableQueryByFilters,
   fetchByPage,

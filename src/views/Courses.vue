@@ -227,7 +227,7 @@ import { ref, onMounted, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { query, limit, startAfter, getDocs } from "firebase/firestore";
 import { generateDatatableQueryByFilters } from "@/firestore/utils";
-import { currentUser } from "@/firebase/init";
+import { currentUser } from "@/firebase/auth";
 import {
   MapboxMap,
   MapboxMarker,

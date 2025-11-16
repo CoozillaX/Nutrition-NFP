@@ -8,7 +8,8 @@ import {
   deleteDoc,
   where
 } from "firebase/firestore";
-import { db, currentUser } from "@/firebase/init";
+import { db } from "@/firebase/storage";
+import { currentUser } from "@/firebase/auth";
 
 const functionUrl = import.meta.env.VITE_CLOUD_FUNCTION_URL;
 
@@ -16,7 +17,7 @@ async function isBooked(slotId) {
   const q = query(
     collection(db, "bookings"),
     where("slotId", "==", slotId),
-    where("userId", "==", currentUser.value.uid),
+    where("userId", "==", currentUser.value?.uid),
     limit(1)
   );
   return getDocs(q)
@@ -47,7 +48,7 @@ async function deleteBooking(slotId) {
   const q = query(
     collection(db, "bookings"),
     where("slotId", "==", slotId),
-    where("userId", "==", currentUser.value.uid),
+    where("userId", "==", currentUser.value?.uid),
     limit(1)
   );
   const snap = await getDocs(q);

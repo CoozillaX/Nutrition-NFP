@@ -9,7 +9,8 @@ import {
   addDoc,
   setDoc
 } from "firebase/firestore";
-import { db, currentUser } from "@/firebase/init";
+import { db } from "@/firebase/storage";
+import { currentUser } from "@/firebase/auth";
 
 function generateCourseSlotsQueryByFilters(filters) {
   let newQuery = query(collection(db, "courseSlots"));
@@ -48,7 +49,7 @@ async function addCourseSlot(courseSlot) {
     }
     const { id: _, ...data } = courseSlot; // Exclude id from data
     data.createdAt = serverTimestamp();
-    data.createdBy = currentUser.value.uid;
+    data.createdBy = currentUser.value?.uid;
     return addDoc(collection(db, "courseSlots"), data);
   });
 }

@@ -6,7 +6,8 @@ import {
   addDoc,
   setDoc
 } from "firebase/firestore";
-import { db, currentUser } from "@/firebase/init";
+import { db } from "@/firebase/storage";
+import { currentUser } from "@/firebase/auth";
 import { clearAllRatings } from "@/firestore/ratings";
 import { updateImage } from "@/firestore/utils";
 

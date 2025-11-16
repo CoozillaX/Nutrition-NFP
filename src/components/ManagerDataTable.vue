@@ -100,7 +100,7 @@
       ]"
     >
       <template #body="slotProps">
-        {{ formatDate(slotProps.data.createdAt) }}
+        {{ formatDate(slotProps.data.createdAt.toDate()) }}
       </template>
       <template #filter="{ filterModel, filterCallback }">
         <DatePicker

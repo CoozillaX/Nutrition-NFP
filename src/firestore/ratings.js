@@ -12,7 +12,8 @@ import {
   count,
   average
 } from "firebase/firestore";
-import { db, currentUser } from "@/firebase/init";
+import { db } from "@/firebase/storage";
+import { currentUser } from "@/firebase/auth";
 
 async function getRating(recipeId) {
   const result = {
