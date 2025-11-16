@@ -1,6 +1,6 @@
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { app, storageName } from "@/firebase/init";
+import { app } from "@/firebase/init";
 import {
   ref as storageRef,
   uploadBytes,
@@ -8,7 +8,7 @@ import {
   deleteObject
 } from "firebase/storage";
 
-const db = getFirestore(app, storageName);
+const db = getFirestore(app, import.meta.env.VITE_FIREBASE_STORAGE_NAME);
 const storage = getStorage();
 
 /**

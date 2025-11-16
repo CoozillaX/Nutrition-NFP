@@ -1,14 +1,12 @@
 import { initializeApp } from "firebase/app";
 
 const app = initializeApp({
-  apiKey: "AIzaSyDdosu4kT56ygIc79HYZdlQ3QHoryeBD3w",
-  authDomain: "fit5032-assessments.firebaseapp.com",
-  projectId: "fit5032-assessments",
-  storageBucket: "fit5032-assessments.firebasestorage.app",
-  messagingSenderId: "369854823336",
-  appId: "1:369854823336:web:672b0ff3229b5a2c31bb9d"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 });
 
-const storageName = "fit5032-assessments-database";
-
-export { app, storageName };
+export { app };
