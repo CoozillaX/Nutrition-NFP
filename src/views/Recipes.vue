@@ -48,7 +48,7 @@
             alt=""
             class="w-full h-48 object-cover"
           />
-          <img v-else class="w-full h-48 object-cover" alt=""/>
+          <img v-else class="w-full h-48 object-cover" alt="" />
         </template>
         <template #title>
           <h5 class="font-semibold text-lg">
@@ -92,7 +92,7 @@
       alt=""
       class="w-full h-112 object-cover mb-4 rounded-lg"
     />
-    <img v-else class="w-full h-112 object-cover mb-4 rounded-lg" alt=""/>
+    <img v-else class="w-full h-112 object-cover mb-4 rounded-lg" alt="" />
     <!-- Summary -->
     <p class="mb-4 text-muted-color" v-if="selected?.summary">
       {{ selected.summary }}
@@ -170,7 +170,10 @@ const paginatedRecipes = ref<RecipeEntity[]>([]);
 const pageSize = 12;
 const totalCount = ref(0);
 
-let currQuery = generateDatatableQueryByFilters("recipes") as Query<RecipeEntity, RecipeEntity>;
+let currQuery = generateDatatableQueryByFilters("recipes") as Query<
+  RecipeEntity,
+  RecipeEntity
+>;
 let cursors: QueryDocumentSnapshot<RecipeEntity, RecipeEntity>[] = [];
 
 async function loadPage({ first, page }: { first: number; page: number }) {
@@ -192,6 +195,8 @@ async function loadPage({ first, page }: { first: number; page: number }) {
 
     cursors = newCursors;
     paginatedRecipes.value = data;
+  } catch (error) {
+    console.error("Error loading recipes:", error);
   } finally {
     loading.value = false;
   }
@@ -234,6 +239,8 @@ async function setMyRating() {
   try {
     await setRating(selected.value!.id, myRating.value);
     await loadRating(selected.value!.id);
+  } catch (err) {
+    console.error("Error setting rating:", err);
   } finally {
     ratingSaving.value = false;
   }
@@ -248,6 +255,8 @@ async function clearMyRating() {
   try {
     await clearRating(selected.value.id);
     await loadRating(selected.value.id);
+  } catch (err) {
+    console.error("Error clearing rating:", err);
   } finally {
     ratingSaving.value = false;
   }
