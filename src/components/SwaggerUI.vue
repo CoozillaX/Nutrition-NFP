@@ -18,7 +18,7 @@ const listener = (e: MediaQueryListEvent) => {
 onMounted(async () => {
   SwaggerUIBundle({
     dom_id: "#swg",
-    url: "/openapi.json",
+    url: `${import.meta.env.BASE_URL}openapi.json`,
     docExpansion: "list"
   });
   isDark.value = media.matches;
