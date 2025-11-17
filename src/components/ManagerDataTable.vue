@@ -248,7 +248,7 @@ const onFilter = (event) => {
 
 // Export CSV handler
 const onExportCSV = () => {
-  exportCSV('records.csv', currQuery);
+  exportCSV(currQuery, 'records.csv');
 }
 
 // Confirm delete handler
@@ -295,10 +295,10 @@ const confirmDelete = (event, record) => {
 };
 
 // Update table record
-const updateRecord = (updatedRecord) => {
-  const index = data.value.findIndex((item) => item.id === updatedRecord.id);
+const updateRecord = (id, updatedFields) => {
+  const index = data.value.findIndex((item) => item.id === id);
   if (index !== -1) {
-    data.value[index] = { ...data.value[index], ...updatedRecord };
+    data.value[index] = { ...data.value[index], ...updatedFields };
   }
 };
 

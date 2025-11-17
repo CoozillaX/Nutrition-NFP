@@ -1,7 +1,6 @@
 import { ref } from "vue";
 import {
   getAuth,
-  beforeAuthStateChanged,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,

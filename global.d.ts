@@ -16,10 +16,40 @@ declare global {
     name: string;
     summary: string;
     details: string;
+    location: number[];
     imageUrl?: string;
     imagePath?: string;
     createdBy?: string;
     createdAt: FieldValue | Timestamp;
+  }
+
+  interface CourseSlotEntity {
+    id: string;
+    courseId: string;
+    capacity: number;
+    start: Date | Timestamp;
+    end: Date | Timestamp;
+    createdBy?: string;
+    createdAt: FieldValue | Timestamp;
+  }
+
+  interface RecipeEntity {
+    id: string;
+    name: string;
+    summary: string;
+    details: string;
+    imageUrl?: string;
+    imagePath?: string;
+    createdBy?: string;
+    createdAt: FieldValue | Timestamp;
+  }
+
+  interface RatingEntity {
+    id: string;
+    recipeId: string;
+    userId: string;
+    value: number;
+    updatedAt: FieldValue | Timestamp;
   }
 }
 

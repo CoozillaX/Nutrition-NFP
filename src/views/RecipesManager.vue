@@ -138,7 +138,7 @@
 import { ref, reactive } from "vue";
 import { useToast } from "primevue/usetoast";
 import { addRecipe, updateRecipe, deleteRecipe } from "@/firestore/recipes";
-import { updateImage } from "@/firestore/utils";
+import { uploadImage, deleteImage } from "@/firebase/storage";
 import ManagerDataTable from "@/components/ManagerDataTable.vue";
 
 const toast = useToast();
@@ -173,8 +173,8 @@ const openModal = (recipe) => {
     initialValues.details = "";
     initialValues.imagePath = "";
     initialValues.imageUrl = "";
-    imageData.value = null;
   }
+  imageData.value = null;
   modalVisible.value = true;
 };
 
@@ -222,22 +222,26 @@ async function onDialogSubmit({ valid, values }) {
         details: values.details.trim()
       };
 
-      // Update image if changed
-      if (
-        imageData.value || // New image selected
-        (!values.imageUrl && values.imagePath) // Existing image removed
-      ) {
-        const { imageUrl, imagePath } = await updateImage(
-          values.imagePath,
-          imageData.value
-        );
-        updatedFields.imageUrl = imageUrl;
-        updatedFields.imagePath = imagePath;
+      // Handle image update
+      const newImg = imageData.value;
+      const oldImgPath = values.imagePath;
+
+      // Delete old image if needed
+      if (oldImgPath && (newImg || !values.imageUrl)) {
+        await deleteImage(oldImgPath);
+        updatedFields.imageUrl = null;
+        updatedFields.imagePath = null;
+      }
+      // Upload new image
+      if (newImg) {
+        const { url, path } = await uploadImage(newImg);
+        updatedFields.imageUrl = url;
+        updatedFields.imagePath = path;
       }
 
+      // Update recipe
       await updateRecipe(values.id, updatedFields);
-      // local update
-      dataTable?.value?.updateRecord(values);
+      dataTable?.value?.updateRecord(values.id, updatedFields);
     } else {
       await addRecipe(
         {

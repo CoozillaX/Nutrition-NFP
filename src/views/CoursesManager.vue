@@ -34,6 +34,10 @@
               })($event)
             "
           >
+            <!-- Hidden attributes -->
+            <InputText name="id" type="hidden" />
+            <InputText name="imagePath" type="hidden" />
+            <InputText name="imageUrl" type="hidden" />
             <!-- Name -->
             <div>
               <label for="name" class="form-label">Name *</label>
@@ -93,10 +97,10 @@
             <!-- Image (optional) -->
             <div class="mt-3">
               <label for="image" class="form-label">Image (optional)</label>
-              <div v-if="currentCourse?.imageUrl" class="mt-2">
+              <div v-if="$form.imageUrl?.value" class="mt-2">
                 <div class="flex items-center gap-3">
                   <Image
-                    :src="currentCourse?.imageUrl"
+                    :src="$form.imageUrl.value"
                     width="96"
                     height="96"
                     preview
@@ -111,7 +115,10 @@
                     tabindex="0"
                     outlined
                     :disabled="submitting"
-                    @click="onFileRemove"
+                    @click="
+                      $form.imageUrl.value = '';
+                      imageData = null;
+                    "
                   ></Button>
                 </div>
               </div>
@@ -298,7 +305,7 @@ import {
   updateCourseSlot,
   deleteCourseSlot
 } from "@/firestore/courseSlots";
-import { updateImage } from "@/firestore/utils";
+import { uploadImage, deleteImage } from "@/firebase/storage";
 import ManagerDataTable from "@/components/ManagerDataTable.vue";
 
 const toast = useToast();
@@ -346,13 +353,13 @@ const calendarOptions = {
 
   // Load events dynamically
   events(fetchInfo, successCallback, failureCallback) {
-    if (!currentCourse.value?.id) {
+    if (!currentCourseId) {
       failureCallback("No course selected");
       return;
     }
     // Generate query
     const query = generateCourseSlotsQueryByFilters({
-      courseId: currentCourse.value.id,
+      courseId: currentCourseId,
       start: fetchInfo.start,
       end: fetchInfo.end
     });
@@ -469,11 +476,14 @@ const calendarOptions = {
 };
 
 // Course Modal
-const currentCourse = ref(null);
+let currentCourseId = null;
 const courseInitialValues = reactive({
+  id: "",
   name: "",
   summary: "",
-  details: ""
+  details: "",
+  imagePath: "",
+  imageUrl: ""
 });
 
 const courseModalVisible = ref(false);
@@ -482,19 +492,25 @@ const courseLngLat = ref(null);
 const submitting = ref(false);
 
 const openCourseModal = (course) => {
-  currentCourse.value = course;
+  currentCourseId = course?.id || null;
   imageData.value = null;
   if (course) {
     // Edit existing course
-    courseInitialValues.name = course.name;
-    courseInitialValues.summary = course.summary;
-    courseInitialValues.details = course.details;
+    courseInitialValues.id = course.id || "";
+    courseInitialValues.name = course.name || "";
+    courseInitialValues.summary = course.summary || "";
+    courseInitialValues.details = course.details || "";
+    courseInitialValues.imagePath = course.imagePath || "";
+    courseInitialValues.imageUrl = course.imageUrl || "";
     courseLngLat.value = course.location;
   } else {
     // Create new course
+    courseInitialValues.id = "";
     courseInitialValues.name = "";
     courseInitialValues.summary = "";
     courseInitialValues.details = "";
+    courseInitialValues.imagePath = "";
+    courseInitialValues.imageUrl = "";
     courseLngLat.value = null;
   }
   courseModalVisible.value = true;
@@ -530,19 +546,12 @@ function onFileSelect(e) {
   if (file) imageData.value = file;
 }
 
-function onFileRemove() {
-  if (currentCourse.value) {
-    currentCourse.value.imageUrl = "";
-  }
-  imageData.value = null;
-}
-
 function onCourseFormSubmit(nextStepFn) {
   return async ({ valid, values }) => {
     if (!valid) return;
     try {
       submitting.value = true;
-      if (currentCourse.value) {
+      if (values.id) {
         // Update basic info
         let updatedFields = {
           name: values.name.trim(),
@@ -550,32 +559,29 @@ function onCourseFormSubmit(nextStepFn) {
           details: values.details.trim()
         };
 
-        // Update image if changed
-        if (
-          imageData.value || // New image selected
-          (!currentCourse.value?.imageUrl && currentCourse.value?.imagePath) // Existing image removed
-        ) {
-          const { imageUrl, imagePath } = await updateImage(
-            currentCourse.value?.imagePath,
-            imageData.value
-          );
-          updatedFields.imageUrl = imageUrl;
-          updatedFields.imagePath = imagePath;
+        // Handle image update
+        const newImg = imageData.value;
+        const oldImgPath = values.imagePath;
+
+        // Delete old image if needed
+        if (oldImgPath && (newImg || !values.imageUrl)) {
+          await deleteImage(oldImgPath);
+          updatedFields.imageUrl = null;
+          updatedFields.imagePath = null;
+        }
+        // Upload new image
+        if (newImg) {
+          const { url, path } = await uploadImage(newImg);
+          updatedFields.imageUrl = url;
+          updatedFields.imagePath = path;
         }
 
-        // Save to Firestore
-        await updateCourse(currentCourse.value.id, updatedFields);
-        // local update in datatable
-        dataTable?.value?.updateRecord({
-          ...currentCourse.value,
-          ...updatedFields
-        });
-        nextTick(() => {
-          currentCourse.value = { ...currentCourse.value, ...updatedFields };
-        });
+        // Updating existing course
+        await updateCourse(values.id, updatedFields);
+        dataTable?.value?.updateRecord(values.id, updatedFields);
       } else {
         // Creating new course
-        const courseId = await addCourse(
+        currentCourseId = await addCourse(
           {
             name: values.name.trim(),
             summary: values.summary.trim(),
@@ -584,9 +590,6 @@ function onCourseFormSubmit(nextStepFn) {
           imageData.value
         );
         dataTable?.value?.reload();
-        nextTick(() => {
-          currentCourse.value = { id: courseId, ...values };
-        });
       }
 
       toast.add({
@@ -612,9 +615,10 @@ function onCourseFormSubmit(nextStepFn) {
 
 // Location Step
 function onLocationSubmit(nextStepFn) {
-  updateCourse(currentCourse.value.id, {
+  const updatedFields = {
     location: courseLngLat.value
-  })
+  };
+  updateCourse(currentCourseId, updatedFields)
     .then(() => {
       toast.add({
         severity: "success",
@@ -622,8 +626,7 @@ function onLocationSubmit(nextStepFn) {
         detail: "Course location saved.",
         life: 1000
       });
-      // local update
-      dataTable?.value?.updateRecord(currentCourse.value);
+      dataTable?.value?.updateRecord(currentCourseId, updatedFields);
       nextStepFn();
       reloadCalendar();
     })
@@ -667,7 +670,7 @@ const onCourseSlotFormSubmit = async ({ valid, values }) => {
     } else {
       // Add new slot
       await addCourseSlot({
-        courseId: currentCourse.value.id,
+        courseId: currentCourseId,
         start: currentEvent.start,
         end: currentEvent.end,
         capacity: values.capacity
