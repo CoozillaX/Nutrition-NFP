@@ -65,7 +65,7 @@ async function deleteBooking(slotId: string): Promise<void> {
     throw new Error("Booking not found");
   }
   // Delete the booking document
-  const docId = snap.docs[0].id;
+  const docId = snap.docs[0]!.id;
   await deleteDoc(doc(db, collectionName, docId));
 }
 

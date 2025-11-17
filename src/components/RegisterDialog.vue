@@ -77,22 +77,26 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import { register } from "@/firebase/auth";
 
 const props = defineProps({
-  showLoginDialog: Function
+  showLoginDialog: Function || undefined
 });
 
 const toast = useToast();
-
+// Dialog visibility and submission state
 const visible = ref(false);
 const submitting = ref(false);
 
-const registerFormResolver = async ({ values }) => {
-  const errors = {};
+const registerFormResolver = async ({
+  values
+}: {
+  values: Record<string, string>;
+}): Promise<Record<string, any>> => {
+  const errors = {} as Record<string, string>;
   if (!values.email) {
     errors.email = "Email is required.";
   } else {
@@ -136,7 +140,13 @@ const registerFormResolver = async ({ values }) => {
   };
 };
 
-const submitRegisterForm = ({ valid, values }) => {
+const submitRegisterForm = ({
+  valid,
+  values
+}: {
+  valid: boolean;
+  values: Record<string, any>;
+}) => {
   if (!valid) return;
   submitting.value = true;
   register(values.email, values.password)
@@ -148,7 +158,7 @@ const submitRegisterForm = ({ valid, values }) => {
         life: 3000
       });
       visible.value = false;
-      props.showLoginDialog();
+      props.showLoginDialog?.();
     })
     .catch((err) => {
       toast.add({

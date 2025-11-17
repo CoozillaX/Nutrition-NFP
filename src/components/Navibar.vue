@@ -80,17 +80,18 @@
   />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { currentUser, isAdminUser, logout } from "@/firebase/auth";
 import { useToast } from "primevue/usetoast";
 import LoginDialog from "@/components/LoginDialog.vue";
 import RegisterDialog from "@/components/RegisterDialog.vue";
+import type PrimeMenu from "primevue/menu";
 
-const loginDialogRef = ref(null);
-const registerDialogRef = ref(null);
-const userMenuRef = ref(null);
+const loginDialogRef = ref<InstanceType<typeof LoginDialog> | null>(null);
+const registerDialogRef = ref<InstanceType<typeof RegisterDialog> | null>(null);
+const userMenuRef = ref<InstanceType<typeof PrimeMenu> | null>(null);
 
 const router = useRouter();
 const toast = useToast();
@@ -117,7 +118,7 @@ const navbarItems = ref([
   }
 ]);
 
-function filterMenu(items, isAdmin) {
+function filterMenu(items: any[], isAdmin: boolean): any[] {
   return items
     .filter((item) => !item.adminOnly || isAdmin)
     .map((item) => ({
@@ -157,7 +158,7 @@ const userMenuItems = ref([
   }
 ]);
 
-const toggleAvatar = (event) => {
+const toggleAvatar = (event: Event) => {
   userMenuRef.value?.toggle(event);
 };
 

@@ -21,7 +21,7 @@ const collectionName = "courses";
  */
 async function addCourse(
   course: Partial<CourseEntity>,
-  imageFile?: File
+  imageFile?: File | null
 ): Promise<string> {
   // Exclude id from data
   const { id: _, ...rest } = course;
@@ -31,7 +31,7 @@ async function addCourse(
     rest.imageUrl = url;
     rest.imagePath = path;
   }
-  rest.createdBy = currentUser.value?.uid || null;
+  rest.createdBy = currentUser.value?.uid;
   rest.createdAt = serverTimestamp();
   // Add the recipe document
   return (await addDoc(collection(db, collectionName), rest)).id;

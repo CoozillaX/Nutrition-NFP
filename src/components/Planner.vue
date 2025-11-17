@@ -53,7 +53,7 @@
   ></Button>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { nextTick } from "vue";
 import { Textarea } from "primevue";
 import { ref } from "vue";

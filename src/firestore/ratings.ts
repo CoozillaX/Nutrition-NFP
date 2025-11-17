@@ -65,7 +65,7 @@ async function getRating(recipeId: string): Promise<{
     );
     const mineSnap = await getDocs(qMine);
     if (!mineSnap.empty) {
-      result.myRating = mineSnap.docs[0].data().value || 0;
+      result.myRating = mineSnap.docs[0]!.data().value || 0;
     }
   }
   return result;

@@ -92,11 +92,11 @@ function updateCourseSlot(
 
 /**
  * Delete a course slot
- * @param courseSlot The course slot to delete
+ * @param courseSlotId The ID of the course slot to delete
  * @returns A promise that resolves when the course slot is deleted
  */
-function deleteCourseSlot(courseSlot: CourseSlotEntity): Promise<void> {
-  return deleteDoc(doc(db, collectionName, courseSlot.id));
+function deleteCourseSlotById(courseSlotId: string): Promise<void> {
+  return deleteDoc(doc(db, collectionName, courseSlotId));
 }
 
 /**
@@ -118,6 +118,6 @@ export {
   generateCourseSlotsQueryByFilters,
   addCourseSlot,
   updateCourseSlot,
-  deleteCourseSlot,
+  deleteCourseSlotById,
   deleteAllCourseSlotsByCourseId
 };

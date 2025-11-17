@@ -17,8 +17,8 @@ declare global {
     summary: string;
     details: string;
     location: number[];
-    imageUrl?: string;
-    imagePath?: string;
+    imageUrl?: string | null;
+    imagePath?: string | null;
     createdBy?: string;
     createdAt: FieldValue | Timestamp;
   }
@@ -38,8 +38,8 @@ declare global {
     name: string;
     summary: string;
     details: string;
-    imageUrl?: string;
-    imagePath?: string;
+    imageUrl?: string | null;
+    imagePath?: string | null;
     createdBy?: string;
     createdAt: FieldValue | Timestamp;
   }

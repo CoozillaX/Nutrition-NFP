@@ -139,7 +139,6 @@
           <!-- Location -->
           <div v-if="selected?.location" class="mb-4">
             <MapboxMap
-              ref="mapboxRef"
               :accessToken="mapbox_token"
               :center="map_center"
               :zoom="10"
@@ -222,7 +221,7 @@
   </Popover>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { query, limit, startAfter, getDocs } from "firebase/firestore";
@@ -233,6 +232,7 @@ import {
   MapboxMarker,
   MapboxNavigationControl
 } from "@studiometa/vue-mapbox-gl";
+// @ts-ignore: Could not find a declaration file for '@mapbox/mapbox-gl-directions'
 import MapboxDirections from "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions.css";
@@ -243,17 +243,27 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { generateCourseSlotsQueryByFilters } from "@/firestore/courseSlots";
 import { isBooked, addBooking, deleteBooking } from "@/firestore/bookings";
 
+// Types
+import Popover from "primevue/popover";
+import type { Query, QueryDocumentSnapshot } from "firebase/firestore";
+import type { Map } from "mapbox-gl";
+import type {
+  EventApi,
+  EventInput,
+  CalendarOptions
+} from "@fullcalendar/core";
+
 const toast = useToast();
 
 // Mapbox
 const mapbox_token = import.meta.env.VITE_MAPBOX_TOKEN;
+const mapInstance = ref<Map | null>(null);
+
 const map_center = ref([144.9631, -37.8136]); // Melbourne
 
-const mapboxRef = ref(null);
-const mapInstance = ref(null);
-
-function onMapCreated(m) {
+function onMapCreated(m: Map) {
   mapInstance.value = m;
+  // Add directions control
   const directions = new MapboxDirections({
     accessToken: mapbox_token,
     unit: "metric",
@@ -261,7 +271,10 @@ function onMapCreated(m) {
     interactive: false
   });
 
-  mapInstance.value.addControl(directions, "top-left");
+  // @ts-ignore
+  mapInstance.value.addControl(directions as any, "top-left");
+
+  // Remove unwanted UI elements
   document.querySelector(".directions-reverse")?.remove();
   document
     .querySelector("#mapbox-directions-destination-input input")
@@ -271,7 +284,7 @@ function onMapCreated(m) {
     ?.remove();
 
   // Set destination to course location
-  directions.setDestination(selected.value.location);
+  directions.setDestination(selected.value!.location);
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const userCoords = [pos.coords.longitude, pos.coords.latitude];
@@ -288,22 +301,31 @@ function onMapCreated(m) {
 // DataView
 const loading = ref(true);
 const hasMore = ref(false);
-
-const courses = ref([]);
+// Course entity type
+const courses = ref<CourseEntity[]>([]);
 const pageSize = 12;
 
-let baseQuery = generateDatatableQueryByFilters("courses", null);
-let cursor = null;
-let prefetchPromise = null;
+// Base query and cursor
+let baseQuery: Query = generateDatatableQueryByFilters("courses")!;
+// Current cursor
+let cursor: QueryDocumentSnapshot | null = null;
+// Prefetch promise
+let prefetchPromise: Promise<{
+  rows: CourseEntity[];
+  nextCursor: QueryDocumentSnapshot | null;
+  hasMore: boolean;
+}> | null = null;
 
 // Request a page of data and return the results
-const fetchPage = async (cursor) => {
+const fetchPage = async (cursor: QueryDocumentSnapshot | null) => {
   let q = query(baseQuery, limit(pageSize));
   if (cursor) q = query(baseQuery, startAfter(cursor), limit(pageSize));
 
   const snap = await getDocs(q);
-  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const last = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : cursor;
+  const rows = snap.docs.map(
+    (d) => ({ id: d.id, ...d.data() }) as CourseEntity
+  );
+  const last = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1]! : cursor;
   const _hasMore = snap.docs.length === pageSize;
   return { rows, nextCursor: last, hasMore: _hasMore };
 };
@@ -333,21 +355,22 @@ async function loadPage() {
 
 /* modal */
 const modalVisible = ref(false);
-const selected = ref(null);
+const selected = ref<CourseEntity | null>(null);
 
-async function openCourseModal(course) {
+async function openCourseModal(course: CourseEntity) {
   selected.value = course;
   modalVisible.value = true;
 }
 
 // FullCalendar
-const fc = ref(null);
-const cp = ref(null);
+const fc = ref<InstanceType<typeof FullCalendar> | null>(null);
+const cp = ref<InstanceType<typeof Popover> | null>(null);
 
-let currentEvent = null;
+let currentEvent: EventApi | null = null;
 const currentEventIsBooked = ref(false);
 const popoverLoading = ref(false);
 
+// Reload FullCalendar events
 const reloadCalendar = () => {
   nextTick(() => {
     fc.value?.getApi().refetchEvents();
@@ -355,12 +378,14 @@ const reloadCalendar = () => {
   });
 };
 
-const onEnterBookingStep = (activateCallback) => {
+// When entering booking step
+const onEnterBookingStep = (activateCallback: () => void) => {
   activateCallback();
   reloadCalendar();
 };
 
-const calendarOptions = {
+// FullCalendar options
+const calendarOptions: CalendarOptions = {
   plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
   initialView: "timeGridWeek",
   allDaySlot: false,
@@ -373,19 +398,20 @@ const calendarOptions = {
   // Load events dynamically
   events(fetchInfo, successCallback, failureCallback) {
     if (!selected.value?.id) {
-      failureCallback("No course selected");
+      failureCallback(new Error("No course selected"));
       return;
     }
     // Generate query
     const query = generateCourseSlotsQueryByFilters({
       courseId: selected.value.id,
-      start: fetchInfo.start,
-      end: fetchInfo.end
+      // Cast to any to avoid type incompatibility between FullCalendar's Date and expected filter types
+      start: fetchInfo.start as unknown as any,
+      end: fetchInfo.end as unknown as any
     });
     // Fetch data
     getDocs(query)
       .then((querySnapshot) => {
-        const events = [];
+        const events: EventInput[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           events.push({
@@ -414,15 +440,16 @@ const calendarOptions = {
   }
 };
 
+// Handle popover confirm
 const onPopoverConfirm = async () => {
   popoverLoading.value = true;
   try {
     if (currentEventIsBooked.value) {
       // Cancel booking
-      await deleteBooking(currentEvent.id);
+      await deleteBooking(currentEvent!.id);
     } else {
       // Add booking
-      await addBooking(currentEvent.id);
+      await addBooking(currentEvent!.id);
     }
     toast.add({
       severity: "success",
@@ -436,7 +463,7 @@ const onPopoverConfirm = async () => {
     toast.add({
       severity: "error",
       summary: "Error",
-      detail: `Error: ${error?.response?.data || error.message}`,
+      detail: `Error: ${(error as any)?.response?.data || (error as any)?.message || String(error)}`,
       life: 1000
     });
   } finally {

@@ -2,7 +2,7 @@
   <div id="swg" :class="isDark ? 'swagger-dark' : ''"></div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { SwaggerUIBundle } from "swagger-ui-dist";
 import "swagger-ui-dist/swagger-ui.css";
@@ -11,7 +11,7 @@ import "@/assets/swagger-dark.css";
 const media = window.matchMedia("(prefers-color-scheme: dark)");
 const isDark = ref(false);
 
-const listener = (e) => {
+const listener = (e: MediaQueryListEvent) => {
   isDark.value = e.matches;
 };
 

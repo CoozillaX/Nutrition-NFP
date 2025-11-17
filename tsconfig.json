@@ -6,7 +6,7 @@
     "allowJs": true,
     "checkJs": false,
     "types": ["vite/client", "node"],
-    "strict": false,
+    "strict": true,
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {

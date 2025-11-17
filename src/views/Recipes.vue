@@ -69,8 +69,8 @@
         :rows="pageSize"
         :totalRecords="totalCount"
         @page="loadPage"
-        @keydown.left.prevent="paginator?.changePageToPrev(e)"
-        @keydown.right.prevent="paginator?.changePageToNext(e)"
+        @keydown.left.prevent="paginator?.changePageToPrev($event)"
+        @keydown.right.prevent="paginator?.changePageToNext($event)"
       />
     </div>
   </div>
@@ -147,7 +147,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { currentUser } from "@/firebase/auth";
 import {
@@ -156,21 +156,24 @@ import {
   getTotalCount
 } from "@/firestore/utils";
 import { getRating, setRating, clearRating } from "@/firestore/ratings";
+import Paginator from "primevue/paginator";
+import { Query, QueryDocumentSnapshot } from "firebase/firestore";
 
-const paginator = ref(null);
+// set to any to access internal methods
+const paginator = ref<any>(null);
 
 /* pagination */
 const loading = ref(true);
 const offset = ref(0);
-const paginatedRecipes = ref([]);
+const paginatedRecipes = ref<RecipeEntity[]>([]);
 
 const pageSize = 12;
 const totalCount = ref(0);
 
-let currQuery = generateDatatableQueryByFilters("recipes", null);
-let cursors = [];
+let currQuery = generateDatatableQueryByFilters("recipes") as Query<RecipeEntity, RecipeEntity>;
+let cursors: QueryDocumentSnapshot<RecipeEntity, RecipeEntity>[] = [];
 
-async function loadPage({ first, page }) {
+async function loadPage({ first, page }: { first: number; page: number }) {
   loading.value = true;
   offset.value = first;
   try {
@@ -180,7 +183,7 @@ async function loadPage({ first, page }) {
     }
 
     // Fetch data for the current page
-    const { data, cursors: newCursors } = await fetchByPage(
+    const { data, cursors: newCursors } = await fetchByPage<RecipeEntity>(
       page,
       currQuery,
       pageSize,
@@ -196,13 +199,13 @@ async function loadPage({ first, page }) {
 
 /* modal */
 const modalVisible = ref(false);
-const selected = ref(null);
+const selected = ref<RecipeEntity | null>(null);
 
 const ratingAvg = ref(0);
 const ratingCount = ref(0);
 const myRating = ref(0);
 
-async function openRecipeModal(recipe) {
+async function openRecipeModal(recipe: RecipeEntity) {
   selected.value = recipe;
   // reset ratings
   ratingAvg.value = 0;
@@ -219,7 +222,7 @@ const displayAvg = computed(() =>
   ratingCount.value ? ratingAvg.value.toFixed(1) : "0.0"
 );
 
-async function loadRating(recipeId) {
+async function loadRating(recipeId: string) {
   const { count, avg, myRating: myR } = await getRating(recipeId);
   ratingCount.value = count;
   ratingAvg.value = avg;
@@ -229,8 +232,8 @@ async function loadRating(recipeId) {
 async function setMyRating() {
   ratingSaving.value = true;
   try {
-    await setRating(selected.value.id, myRating.value);
-    await loadRating(selected.value.id);
+    await setRating(selected.value!.id, myRating.value);
+    await loadRating(selected.value!.id);
   } finally {
     ratingSaving.value = false;
   }

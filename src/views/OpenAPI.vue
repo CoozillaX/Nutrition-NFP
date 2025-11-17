@@ -4,6 +4,6 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import SwaggerUI from '@/components/SwaggerUI.vue'
 </script>

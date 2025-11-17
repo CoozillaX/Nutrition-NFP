@@ -282,7 +282,7 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { getDocs } from "firebase/firestore";
@@ -303,26 +303,33 @@ import {
   generateCourseSlotsQueryByFilters,
   addCourseSlot,
   updateCourseSlot,
-  deleteCourseSlot
+  deleteCourseSlotById
 } from "@/firestore/courseSlots";
 import { uploadImage, deleteImage } from "@/firebase/storage";
 import ManagerDataTable from "@/components/ManagerDataTable.vue";
 
+// Types
+import Popover from "primevue/popover";
+import type { FileUploadSelectEvent } from "primevue/fileupload";
+import type { MapMouseEvent } from "mapbox-gl";
+import type { DateSelectArg, EventApi, EventInput, CalendarOptions } from "@fullcalendar/core";
+
 const toast = useToast();
-const dataTable = ref(null);
+const dataTable = ref<InstanceType<typeof ManagerDataTable> | null>(null);
 
 // Mapbox
 const mapbox_token = import.meta.env.VITE_MAPBOX_TOKEN;
 const map_center = ref([144.9631, -37.8136]); // Melbourne
 
-function onMapClick(event) {
+function onMapClick(event: MapMouseEvent) {
   courseLngLat.value = [event.lngLat.lng, event.lngLat.lat];
 }
 
 // FullCalendar
-const fc = ref(null);
-const cp = ref(null);
-let currentEvent = null;
+const fc = ref<InstanceType<typeof FullCalendar> | null>(null);
+const cp = ref<InstanceType<typeof Popover> | null>(null);
+let currentClickedEvent: EventApi | null = null; // For booking step
+let currentSelectedArg: DateSelectArg | null = null; // For adding new slot
 
 const reloadCalendar = () => {
   nextTick(() => {
@@ -332,12 +339,12 @@ const reloadCalendar = () => {
 };
 
 const deleteEvent = () => {
-  currentEvent.remove();
+  currentClickedEvent?.remove();
   fc.value?.getApi().render();
   cp.value?.hide();
 };
 
-const calendarOptions = {
+const calendarOptions: CalendarOptions = {
   plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
   initialView: "timeGridWeek",
   allDaySlot: false,
@@ -354,19 +361,20 @@ const calendarOptions = {
   // Load events dynamically
   events(fetchInfo, successCallback, failureCallback) {
     if (!currentCourseId) {
-      failureCallback("No course selected");
+      failureCallback(new Error("No course selected"));
       return;
     }
     // Generate query
     const query = generateCourseSlotsQueryByFilters({
       courseId: currentCourseId,
-      start: fetchInfo.start,
-      end: fetchInfo.end
+      // Cast to any to avoid type incompatibility between FullCalendar's Date and expected filter types
+      start: fetchInfo.start as unknown as any,
+      end: fetchInfo.end as unknown as any
     });
     // Fetch data
     getDocs(query)
       .then((querySnapshot) => {
-        const events = [];
+        const events: EventInput[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           events.push({
@@ -386,7 +394,7 @@ const calendarOptions = {
 
   // Add new event
   select(arg) {
-    const api = fc.value.getApi();
+    const api = fc.value?.getApi();
     // Ensure start is in the future
     const now = new Date();
     if (arg.start < now) {
@@ -396,7 +404,7 @@ const calendarOptions = {
         detail: "Start time must be in the future.",
         life: 1000
       });
-      api.unselect();
+      api?.unselect();
       return;
     }
     // Ensure start and end are on the same day
@@ -410,15 +418,15 @@ const calendarOptions = {
         life: 1000
       });
     } else {
-      currentEvent = arg;
+      currentSelectedArg = arg;
       openCourseSlotModal();
     }
-    api.unselect();
+    api?.unselect();
   },
 
   // Context menu
   eventClick(arg) {
-    currentEvent = arg.event;
+    currentClickedEvent = arg.event;
     cp.value?.toggle(arg.jsEvent, arg.jsEvent.target);
     nextTick(() => {
       document.getElementById("cp-edit-btn")?.focus();
@@ -454,8 +462,8 @@ const calendarOptions = {
 
   // Delete event
   eventRemove(arg) {
-    deleteCourseSlot(arg.event)
-      .then((_) => {
+    deleteCourseSlotById(arg.event.id)
+      .then(() => {
         toast.add({
           severity: "success",
           summary: "Success",
@@ -476,7 +484,7 @@ const calendarOptions = {
 };
 
 // Course Modal
-let currentCourseId = null;
+let currentCourseId: string | null = null;
 const courseInitialValues = reactive({
   id: "",
   name: "",
@@ -488,10 +496,10 @@ const courseInitialValues = reactive({
 
 const courseModalVisible = ref(false);
 const imageData = ref(null);
-const courseLngLat = ref(null);
+const courseLngLat = ref<number[] | null>(null);
 const submitting = ref(false);
 
-const openCourseModal = (course) => {
+const openCourseModal = (course: CourseEntity | null) => {
   currentCourseId = course?.id || null;
   imageData.value = null;
   if (course) {
@@ -516,8 +524,8 @@ const openCourseModal = (course) => {
   courseModalVisible.value = true;
 };
 
-const courseFormResolver = ({ values }) => {
-  const errors = {};
+const courseFormResolver = ({ values }: { values: Record<string, any> }) => {
+  const errors = {} as Record<string, string>;
 
   if (!values.name || !values.name.trim()) {
     errors.name = "Name is required.";
@@ -541,19 +549,25 @@ const courseFormResolver = ({ values }) => {
   };
 };
 
-function onFileSelect(e) {
+function onFileSelect(e: FileUploadSelectEvent) {
   const file = e.files?.[0];
   if (file) imageData.value = file;
 }
 
-function onCourseFormSubmit(nextStepFn) {
-  return async ({ valid, values }) => {
+function onCourseFormSubmit(nextStepFn: () => void) {
+  return async ({
+    valid,
+    values
+  }: {
+    valid: boolean;
+    values: Record<string, any>;
+  }) => {
     if (!valid) return;
     try {
       submitting.value = true;
       if (values.id) {
         // Update basic info
-        let updatedFields = {
+        const updatedFields: Partial<CourseEntity> = {
           name: values.name.trim(),
           summary: values.summary.trim(),
           details: values.details.trim()
@@ -601,10 +615,11 @@ function onCourseFormSubmit(nextStepFn) {
 
       nextStepFn();
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       toast.add({
         severity: "error",
         summary: "Error",
-        detail: `Error: ${err.message}`,
+        detail: `Error: ${message}`,
         life: 1000
       });
     } finally {
@@ -614,11 +629,11 @@ function onCourseFormSubmit(nextStepFn) {
 }
 
 // Location Step
-function onLocationSubmit(nextStepFn) {
-  const updatedFields = {
-    location: courseLngLat.value
+function onLocationSubmit(nextStepFn: () => void) {
+  const updatedFields: Partial<CourseEntity> = {
+    location: courseLngLat.value!
   };
-  updateCourse(currentCourseId, updatedFields)
+  updateCourse(currentCourseId!, updatedFields)
     .then(() => {
       toast.add({
         severity: "success",
@@ -626,7 +641,7 @@ function onLocationSubmit(nextStepFn) {
         detail: "Course location saved.",
         life: 1000
       });
-      dataTable?.value?.updateRecord(currentCourseId, updatedFields);
+      dataTable?.value?.updateRecord(currentCourseId!, updatedFields);
       nextStepFn();
       reloadCalendar();
     })
@@ -648,9 +663,9 @@ const courseSlotInitialValues = reactive({
 const courseSlotModalVisible = ref(false);
 
 const openCourseSlotModal = () => {
-  if (currentEvent?.extendedProps) {
+  if (currentClickedEvent?.extendedProps) {
     // Edit existing slot
-    courseSlotInitialValues.capacity = currentEvent.extendedProps.capacity || 1;
+    courseSlotInitialValues.capacity = currentClickedEvent.extendedProps.capacity || 1;
   } else {
     // Create new slot
     courseSlotInitialValues.capacity = 1;
@@ -659,20 +674,26 @@ const openCourseSlotModal = () => {
   courseSlotModalVisible.value = true;
 };
 
-const onCourseSlotFormSubmit = async ({ valid, values }) => {
-  if (!valid || !currentEvent) return;
+const onCourseSlotFormSubmit = async ({
+  valid,
+  values
+}: {
+  valid: boolean;
+  values: Record<string, any>;
+}) => {
+  if (!valid || !currentSelectedArg) return;
   submitting.value = true;
 
   try {
-    if (currentEvent.id && currentEvent.id !== "null") {
+    if (currentClickedEvent && currentClickedEvent.id && currentClickedEvent.id !== "null") {
       // Update existing slot (only capacity changed)
-      currentEvent.setExtendedProp("capacity", values.capacity);
+      currentClickedEvent.setExtendedProp("capacity", values.capacity);
     } else {
       // Add new slot
       await addCourseSlot({
-        courseId: currentCourseId,
-        start: currentEvent.start,
-        end: currentEvent.end,
+        courseId: currentCourseId!,
+        start: currentSelectedArg.start,
+        end: currentSelectedArg.end,
         capacity: values.capacity
       });
       toast.add({
@@ -684,10 +705,11 @@ const onCourseSlotFormSubmit = async ({ valid, values }) => {
       fc.value?.getApi().refetchEvents();
     }
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     toast.add({
       severity: "error",
       summary: "Error",
-      detail: `Error: ${err.message}`,
+      detail: `Error: ${message}`,
       life: 1000
     });
   } finally {

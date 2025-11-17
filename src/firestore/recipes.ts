@@ -20,8 +20,8 @@ const collectionName = "recipes";
  * @returns The ID of the newly created recipe
  */
 async function addRecipe(
-  recipe: RecipeEntity,
-  imageFile?: File
+  recipe: Partial<RecipeEntity>,
+  imageFile?: File | null
 ): Promise<string> {
   const { id: _, ...data } = recipe; // Exclude id from data
   // Upload image if exists
@@ -30,7 +30,7 @@ async function addRecipe(
     data.imageUrl = url;
     data.imagePath = path;
   }
-  data.createdBy = currentUser.value?.uid || null;
+  data.createdBy = currentUser.value?.uid;
   data.createdAt = serverTimestamp();
   // Add the recipe document
   return (await addDoc(collection(db, collectionName), data)).id;

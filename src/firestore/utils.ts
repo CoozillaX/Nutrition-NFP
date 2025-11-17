@@ -27,8 +27,8 @@ import type { DataTableFilterEvent } from "primevue/datatable";
  */
 function generateDatatableQueryByFilters(
   collectionName: string,
-  filters: DataTableFilterEvent["filters"]
-): Query<DocumentData, DocumentData> {
+  filters?: DataTableFilterEvent["filters"]
+): Query | null {
   let newQuery = query(collection(db, collectionName), orderBy("createdAt"));
   if (!filters) return newQuery;
 
@@ -100,7 +100,7 @@ async function getCursorForPage<T extends DocumentData>(
   baseQuery: Query<T, T>,
   countPerRow: number,
   cursors: QueryDocumentSnapshot<T, T>[]
-): Promise<QueryDocumentSnapshot<T, T>> {
+): Promise<QueryDocumentSnapshot<T, T> | undefined | null> {
   // If we already have the cursor for the target page, return it
   if (cursors[pageNum - 1]) return cursors[pageNum - 1];
 
@@ -127,7 +127,7 @@ async function getCursorForPage<T extends DocumentData>(
   for (let i = lastKnownPage + 1; i < pageNum; i++) {
     const snap = await getDocs(q);
     if (snap.empty) return null;
-    cursors[i] = snap.docs[snap.docs.length - 1];
+    cursors[i] = snap.docs[snap.docs.length - 1]!;
 
     q = query(baseQuery, startAfter(cursors[i]), limit(countPerRow));
   }
@@ -171,7 +171,7 @@ async function fetchByPage<T extends DocumentData>(
 
   // Update the cursor for the current page
   if (snap.docs.length > 0) {
-    cursors[pageNum] = snap.docs[snap.docs.length - 1];
+    cursors[pageNum] = snap.docs[snap.docs.length - 1]!;
   }
   return {
     data,

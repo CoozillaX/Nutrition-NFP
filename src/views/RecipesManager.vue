@@ -134,15 +134,16 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive } from "vue";
 import { useToast } from "primevue/usetoast";
 import { addRecipe, updateRecipe, deleteRecipe } from "@/firestore/recipes";
 import { uploadImage, deleteImage } from "@/firebase/storage";
 import ManagerDataTable from "@/components/ManagerDataTable.vue";
+import type { FileUploadSelectEvent } from "primevue/fileupload";
 
 const toast = useToast();
-const dataTable = ref(null);
+const dataTable = ref<InstanceType<typeof ManagerDataTable> | null>(null);
 
 // Recipe Modal
 const initialValues = reactive({
@@ -158,7 +159,7 @@ const modalVisible = ref(false);
 const imageData = ref(null);
 const submitting = ref(false);
 
-const openModal = (recipe) => {
+const openModal = (recipe: RecipeEntity | null) => {
   if (recipe) {
     initialValues.id = recipe.id || "";
     initialValues.name = recipe.name || "";
@@ -178,8 +179,8 @@ const openModal = (recipe) => {
   modalVisible.value = true;
 };
 
-const formResolver = ({ values }) => {
-  const errors = {};
+const formResolver = ({ values }: { values: Record<string, any> }) => {
+  const errors = {} as Record<string, string>;
 
   if (!values.name || !values.name.trim()) {
     errors.name = "Name is required.";
@@ -203,12 +204,12 @@ const formResolver = ({ values }) => {
   };
 };
 
-function onFileSelect(e) {
+function onFileSelect(e: FileUploadSelectEvent) {
   const file = e.files?.[0];
   if (file) imageData.value = file;
 }
 
-async function onDialogSubmit({ valid, values }) {
+async function onDialogSubmit({ valid, values }: { valid: boolean; values: Record<string, any> }) {
   if (!valid) return;
   try {
     submitting.value = true;
@@ -216,7 +217,7 @@ async function onDialogSubmit({ valid, values }) {
     // Create or update recipe
     if (values.id) {
       // Update basic info
-      let updatedFields = {
+      const updatedFields: Partial<RecipeEntity> = {
         name: values.name.trim(),
         summary: values.summary.trim(),
         details: values.details.trim()
@@ -263,10 +264,11 @@ async function onDialogSubmit({ valid, values }) {
       life: 1000
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     toast.add({
       severity: "error",
       summary: "Error",
-      detail: `Error: ${err.message}`,
+      detail: `Error: ${message}`,
       life: 1000
     });
   } finally {

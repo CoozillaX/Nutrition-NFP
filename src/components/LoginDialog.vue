@@ -66,22 +66,30 @@
   </Dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import { login } from "@/firebase/auth";
+import type { Form } from "@primevue/forms";
 
+// Props
 const props = defineProps({
-  showRegisterDialog: Function
+  showRegisterDialog: Function || undefined
 });
 
 const toast = useToast();
-
+// Dialog visibility and submission state
 const visible = ref(false);
 const submitting = ref(false);
 
-const loginFormResolver = async ({ values }) => {
-  const errors = {};
+// Form resolver for login form validation
+const loginFormResolver = async ({
+  values
+}: {
+  values: Record<string, any>;
+}): Promise<Record<string, any>> => {
+  const errors = {} as Record<string, string>;
+  // Email validation
   if (!values.email) {
     errors.email = "Email is required.";
   } else {
@@ -90,56 +98,61 @@ const loginFormResolver = async ({ values }) => {
       errors.email = "Email is not valid.";
     }
   }
-
+  // Password validation
   if (!values.password) {
     errors.password = "Password is required.";
   } else if (values.password.length < 8) {
     errors.password = "Password must be at least 8 characters long.";
   }
-
   return {
     values,
     errors
   };
 };
 
-const submitLoginForm = async ({ valid, values }) => {
+// Handle form submission
+const submitLoginForm = async ({
+  valid,
+  values
+}: {
+  valid: boolean;
+  values: Record<string, any>;
+}) => {
   if (!valid) return;
   submitting.value = true;
-  login(values.email, values.password)
-    .then(() => {
-      toast.add({
-        severity: "success",
-        summary: "Success",
-        detail: "Login successful!",
-        life: 3000
-      });
-      visible.value = false;
-    })
-    .catch((err) => {
-      toast.add({
-        severity: "error",
-        summary: "Error",
-        detail: err.message,
-        life: 3000
-      });
-    })
-    .finally(() => {
-      submitting.value = false;
+  try {
+    await login(values.email, values.password);
+    toast.add({
+      severity: "success",
+      summary: "Success",
+      detail: "Login successful!",
+      life: 3000
     });
+    visible.value = false; // Hide dialog on success
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: message,
+      life: 3000
+    });
+  } finally {
+    submitting.value = false;
+  }
 };
 
-function show() {
+const show = () => {
   visible.value = true;
-}
+};
 
-function hide() {
+const hide = () => {
   visible.value = false;
-}
+};
 
 const switchToRegister = () => {
   hide();
-  props.showRegisterDialog();
+  props.showRegisterDialog?.();
 };
 
 defineExpose({ show, hide });
