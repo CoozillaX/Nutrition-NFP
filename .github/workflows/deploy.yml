@@ -38,7 +38,6 @@ jobs:
           VITE_FIREBASE_STORAGE_NAME: ${{ secrets.VITE_FIREBASE_STORAGE_NAME }}
           VITE_CLOUD_FUNCTION_URL: ${{ secrets.VITE_CLOUD_FUNCTION_URL }}
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
-        
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.4
@@ -46,7 +45,6 @@ jobs:
           branch: gh-pages
           folder: dist
           clean: true
-
 
 permissions:
   contents: write
