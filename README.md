@@ -1,35 +1,42 @@
-# Nutrition-NFP
+<h1 align="center">🍏 Nutrition NFP</h1>
 
-This template should help get you started developing with Vue 3 in Vite.
+<p align="center">
+A full-stack <b>Vue 3 + TypeScript + Firebase</b> application for community nutrition management.<br/>
+Includes course booking, recipe management, authentication, admin tools, maps, and API documentation.
+</p>
 
-## Recommended IDE Setup
+<p align="center">
+🔗 <a href="https://coozillax.github.io/Nutrition-NFP/" target="_blank"><b>Live Demo</b></a>
+</p>
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+---
 
-## Customize configuration
+## ✨ Features
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- **User Authentication** — Email login, verification, role-based UI  
+- **Course Management** — CRUD, image upload, filtering, pagination  
+- **Recipe Management** — CRUD with Firebase Storage  
+- **Booking System** — FullCalendar integration with slot validation  
+- **Interactive Map** — Mapbox directions, auto dark-mode  
+- **API Documentation** — Integrated Swagger UI  
+- **Admin Tools** — Protected routes, dynamic menu, PrimeVue DataTable  
 
-## Project Setup
+---
+
+## 🛠️ Tech Stack
+
+- **Vue 3 · TypeScript · Vite**  
+- **Firebase** (Auth · Firestore · Storage · Cloud Functions)  
+- **PrimeVue · TailwindCSS · FullCalendar**  
+- **Mapbox GL JS**  
+- **GitHub Pages · GitHub Actions (CI/CD)**  
+
+---
+
+## 📁 Project Setup
 
 ```sh
-npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
+pnpm i
+pnpm dev
+pnpm build
 ```
