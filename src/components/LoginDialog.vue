@@ -73,9 +73,9 @@ import { login } from "@/firebase/auth";
 import type { Form } from "@primevue/forms";
 
 // Props
-const props = defineProps({
-  showRegisterDialog: Function || undefined
-});
+const props = defineProps<{
+  showRegisterDialog?: Function
+}>();
 
 const toast = useToast();
 // Dialog visibility and submission state

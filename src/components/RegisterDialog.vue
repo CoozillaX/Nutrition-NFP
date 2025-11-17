@@ -82,9 +82,9 @@ import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import { register } from "@/firebase/auth";
 
-const props = defineProps({
-  showLoginDialog: Function || undefined
-});
+const props = defineProps<{
+  showLoginDialog?: Function
+}>();
 
 const toast = useToast();
 // Dialog visibility and submission state

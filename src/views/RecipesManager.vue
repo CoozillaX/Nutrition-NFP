@@ -143,7 +143,7 @@ import ManagerDataTable from "@/components/ManagerDataTable.vue";
 import type { FileUploadSelectEvent } from "primevue/fileupload";
 
 const toast = useToast();
-const dataTable = ref<InstanceType<typeof ManagerDataTable> | null>(null);
+const dataTable = ref<ManagerDataTableExposed | null>(null);
 
 // Recipe Modal
 const initialValues = reactive({
@@ -159,7 +159,7 @@ const modalVisible = ref(false);
 const imageData = ref(null);
 const submitting = ref(false);
 
-const openModal = (recipe: RecipeEntity | null) => {
+const openModal = (recipe?: RecipeEntity) => {
   if (recipe) {
     initialValues.id = recipe.id || "";
     initialValues.name = recipe.name || "";

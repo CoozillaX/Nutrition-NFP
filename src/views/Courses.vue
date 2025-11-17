@@ -405,8 +405,8 @@ const calendarOptions: CalendarOptions = {
     const query = generateCourseSlotsQueryByFilters({
       courseId: selected.value.id,
       // Cast to any to avoid type incompatibility between FullCalendar's Date and expected filter types
-      start: fetchInfo.start as unknown as any,
-      end: fetchInfo.end as unknown as any
+      start: fetchInfo.start as any,
+      end: fetchInfo.end as any
     });
     // Fetch data
     getDocs(query)

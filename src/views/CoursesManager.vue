@@ -285,7 +285,7 @@
 <script setup lang="ts">
 import { ref, reactive, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
-import { getDocs } from "firebase/firestore";
+import { getDocs, Timestamp } from "firebase/firestore";
 import {
   MapboxMap,
   MapboxMarker,
@@ -306,7 +306,6 @@ import {
   deleteCourseSlotById
 } from "@/firestore/courseSlots";
 import { uploadImage, deleteImage } from "@/firebase/storage";
-import ManagerDataTable from "@/components/ManagerDataTable.vue";
 
 // Types
 import Popover from "primevue/popover";
@@ -315,7 +314,7 @@ import type { MapMouseEvent } from "mapbox-gl";
 import type { DateSelectArg, EventApi, EventInput, CalendarOptions } from "@fullcalendar/core";
 
 const toast = useToast();
-const dataTable = ref<InstanceType<typeof ManagerDataTable> | null>(null);
+const dataTable = ref<ManagerDataTableExposed | null>(null);
 
 // Mapbox
 const mapbox_token = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -368,8 +367,8 @@ const calendarOptions: CalendarOptions = {
     const query = generateCourseSlotsQueryByFilters({
       courseId: currentCourseId,
       // Cast to any to avoid type incompatibility between FullCalendar's Date and expected filter types
-      start: fetchInfo.start as unknown as any,
-      end: fetchInfo.end as unknown as any
+      start: fetchInfo.start as any,
+      end: fetchInfo.end as any
     });
     // Fetch data
     getDocs(query)
@@ -436,8 +435,8 @@ const calendarOptions: CalendarOptions = {
   // Update event
   eventChange(arg) {
     updateCourseSlot(arg.event.id, {
-      start: arg.event.start,
-      end: arg.event.end,
+      start: arg.event.start ? Timestamp.fromDate(arg.event.start) : undefined,
+      end: arg.event.end ? Timestamp.fromDate(arg.event.end) : undefined,
       capacity: arg.event.extendedProps.capacity || 1
     })
       .then((_) => {
@@ -499,7 +498,7 @@ const imageData = ref(null);
 const courseLngLat = ref<number[] | null>(null);
 const submitting = ref(false);
 
-const openCourseModal = (course: CourseEntity | null) => {
+const openCourseModal = (course?: CourseEntity) => {
   currentCourseId = course?.id || null;
   imageData.value = null;
   if (course) {
@@ -692,8 +691,8 @@ const onCourseSlotFormSubmit = async ({
       // Add new slot
       await addCourseSlot({
         courseId: currentCourseId!,
-        start: currentSelectedArg.start,
-        end: currentSelectedArg.end,
+        start: currentSelectedArg.start ? Timestamp.fromDate(currentSelectedArg.start) : undefined,
+        end: currentSelectedArg.end ? Timestamp.fromDate(currentSelectedArg.end) : undefined,
         capacity: values.capacity
       });
       toast.add({

@@ -1,3 +1,5 @@
+import { FieldValue, Timestamp } from "firebase/firestore";
+
 declare global {
   interface ImportMetaEnv {
     readonly VITE_FIREBASE_API_KEY: string;
@@ -27,8 +29,8 @@ declare global {
     id: string;
     courseId: string;
     capacity: number;
-    start: Date | Timestamp;
-    end: Date | Timestamp;
+    start: Timestamp;
+    end: Timestamp;
     createdBy?: string;
     createdAt: FieldValue | Timestamp;
   }
@@ -50,6 +52,12 @@ declare global {
     userId: string;
     value: number;
     updatedAt: FieldValue | Timestamp;
+  }
+
+  // Exposed methods for ManagerDataTable component
+  interface ManagerDataTableExposed {
+    reload: () => Promise<void>;
+    updateRecord: (id: string, updatedFields: Record<string, any>) => void;
   }
 }
 

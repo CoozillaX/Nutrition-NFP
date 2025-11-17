@@ -138,7 +138,7 @@
   </DataTable>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends RecipeEntity | CourseEntity">
 import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -160,24 +160,12 @@ import type DataTable from "primevue/datatable";
 const dt = ref<InstanceType<typeof DataTable> | null>(null);
 
 // Props
-const props = defineProps({
-  title: {
-    type: String,
-    default: "Manager"
-  },
-  collectionName: {
-    type: String,
-    required: true
-  },
-  recordDeleteFunc: {
-    type: Function,
-    required: true
-  },
-  onModalOpen: {
-    type: Function,
-    required: true
-  }
-});
+const props = defineProps<{
+  title?: string;
+  collectionName: string;
+  recordDeleteFunc: ((record: T) => Promise<void>);
+  onModalOpen: ((record?: T) => void);
+}>();
 
 // Toast and Confirm
 const toast = useToast();
@@ -262,7 +250,7 @@ const onExportCSV = () => {
 // Confirm delete handler
 const confirmDelete = (
   event: MouseEvent,
-  record: RecipeEntity | CourseEntity
+  record: T
 ) => {
   if (!record || !record.id) return;
   // Show confirmation dialog
@@ -315,7 +303,7 @@ const updateRecord = (id: string, updatedFields: Record<string, any>) => {
 };
 
 // Expose methods to parent
-defineExpose({
+defineExpose<ManagerDataTableExposed>({
   reload,
   updateRecord
 });
