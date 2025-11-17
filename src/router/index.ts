@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import Routes from "./routes";
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: Routes,
   scrollBehavior() {  // Always scroll to top
     return {

@@ -1,4 +1,4 @@
-# FIT5032-assessments
+# Nutrition-NFP
 
 This template should help get you started developing with Vue 3 in Vite.
 
