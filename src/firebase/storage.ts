@@ -16,22 +16,16 @@ const storage = getStorage();
  * @param file - The image file to upload.
  * @returns A promise that resolves with the download URL and storage path of the uploaded image.
  */
-function uploadImage(file: File): Promise<{ url: string; path: string }> {
-  return new Promise<{ url: string; path: string }>(async (resolve, reject) => {
-    try {
-      const ext = file.name.split(".").pop();
-      const uniqueName = `${crypto.randomUUID()}.${ext}`;
-      const path = `images/${uniqueName}`;
-      const fileRef = storageRef(storage, path);
-      // Upload file first
-      await uploadBytes(fileRef, file);
-      // Get download URL
-      const url = await getDownloadURL(fileRef);
-      resolve({ url, path });
-    } catch (err) {
-      reject(err);
-    }
-  });
+async function uploadImage(file: File): Promise<{ url: string; path: string }> {
+  const ext = file.name.split(".").pop();
+  const uniqueName = `${crypto.randomUUID()}.${ext}`;
+  const path = `images/${uniqueName}`;
+  const fileRef = storageRef(storage, path);
+  // Upload file first
+  await uploadBytes(fileRef, file);
+  // Get download URL
+  const url = await getDownloadURL(fileRef);
+  return { url, path };
 }
 
 /**

@@ -8,7 +8,7 @@ import {
   sendEmailVerification
 } from "firebase/auth";
 import { app } from "@/firebase/init";
-import type { User, UserCredential } from "firebase/auth";
+import type { User } from "firebase/auth";
 
 const auth = getAuth(app);
 const currentUser = ref<User | null>(null);
@@ -22,7 +22,7 @@ onAuthStateChanged(auth, async (user) => {
   if (user && user.emailVerified) {
     currentUser.value = user;
     const tokenResult = await user.getIdTokenResult();
-    isAdminUser.value = tokenResult.claims.role === "admin";
+    isAdminUser.value = tokenResult.claims?.role === "admin";
   }
 });
 
@@ -32,8 +32,8 @@ onAuthStateChanged(auth, async (user) => {
  * @param password - The user's password.
  * @returns A promise that resolves when the user is registered.
  */
-function register(email: string, password: string): Promise<UserCredential> {
-  return createUserWithEmailAndPassword(auth, email, password);
+async function register(email: string, password: string): Promise<void> {
+  await createUserWithEmailAndPassword(auth, email, password);
 }
 
 /**
@@ -42,27 +42,16 @@ function register(email: string, password: string): Promise<UserCredential> {
  * @param password - The user's password.
  * @returns A promise that resolves when the user is logged in.
  */
-function login(email: string, password: string): Promise<void> {
-  return new Promise<void>(async (resolve, reject) => {
-    try {
-      const credential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = credential.user;
-      // Check if email is verified
-      if (!user.emailVerified) {
-        await sendEmailVerification(user);
-        throw new Error(
-          "You need to verify your email address. A verification email has been sent."
-        );
-      }
-      resolve();
-    } catch (err) {
-      reject(err);
-    }
-  });
+async function login(email: string, password: string): Promise<void> {
+  const credential = await signInWithEmailAndPassword(auth, email, password);
+  const user = credential.user;
+  // Check if email is verified
+  if (!user.emailVerified) {
+    await sendEmailVerification(user);
+    throw new Error(
+      "You need to verify your email address. A verification email has been sent."
+    );
+  }
 }
 
 /**
