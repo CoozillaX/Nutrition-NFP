@@ -1,0 +1,99 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Nutrition NFP OpenAPI" },
+  "servers": [
+    {
+      "url": "https://openapi-yk7yu5onja-ts.a.run.app"
+    }
+  ],
+  "paths": {
+    "/courses/query": {
+      "post": {
+        "summary": "Query Courses",
+        "description": "Query courses with pagination support.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
+                  "cursor": { "type": "string", "nullable": true }
+                }
+              },
+              "example": { "limit": 10, "cursor": null }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "message": { "type": "string" } }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "name": "Course name",
+                      "summary": "Course summary",
+                      "details": "Course details",
+                      "imageUrl": "https://example.com/course-image.jpg"
+                    }
+                  ],
+                  "nextCursor": "String cursor"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipes/query": {
+      "post": {
+        "summary": "Query Recipes",
+        "description": "Query recipes with pagination support.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
+                  "cursor": { "type": "string", "nullable": true }
+                }
+              },
+              "example": { "limit": 10, "cursor": null }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "message": { "type": "string" } }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "name": "Recipe name",
+                      "summary": "Recipe summary",
+                      "details": "Recipe details",
+                      "imageUrl": "https://example.com/recipe-image.jpg"
+                    }
+                  ],
+                  "nextCursor": "String cursor"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
