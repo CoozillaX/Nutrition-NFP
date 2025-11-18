@@ -1,20 +1,41 @@
-const express = require("express");
-const admin = require("firebase-admin");
-const cors = require("cors");
-const { getFirestore, Timestamp } = require("firebase-admin/firestore");
-const { sign, verify } = require("../utils/crypto");
+import express from "express";
+import admin from "firebase-admin";
+import cors from "cors";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { sign, verify } from "../utils/crypto";
+import { logger } from "firebase-functions";
 
-const { logger } = require("firebase-functions");
+type ResponseData = {
+  data: Array<{
+    name: string;
+    summary: string;
+    details: string;
+    imageUrl: string;
+  }>;
+  nextCursor: string | null;
+};
 
+// avoid re-initializing app
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+// Initialize Firestore
 const db = getFirestore(admin.app(), "nutrition-nfp-db");
 const courseCollection = db.collection("courses");
 const recipeCollection = db.collection("recipes");
 
+// OpenAPI Express app
 const openapi = express();
 openapi.use(express.json());
 openapi.use(cors());
 
-const _requesthandler = async (req, res, collectionName) => {
+// Common request handler for querying collections with pagination
+const _requesthandler = async (
+  req: express.Request,
+  res: express.Response,
+  collectionName: string
+) => {
   const { cursor: signed, limit } = req.body;
   let createdAt, id;
   // verify limit
@@ -62,11 +83,11 @@ const _requesthandler = async (req, res, collectionName) => {
   try {
     const snap = await query.get();
     // build response
-    const data = [];
+    const response: ResponseData = { data: [], nextCursor: null };
     snap.forEach((doc) => {
       const d = doc.data();
       d.id = doc.id;
-      data.push({
+      response.data.push({
         name: d.name,
         summary: d.summary,
         details: d.details,
@@ -74,7 +95,6 @@ const _requesthandler = async (req, res, collectionName) => {
       });
     });
     // build next cursor
-    let nextCursor = null;
     if (snap.size === limit) {
       const lastDoc = snap.docs[snap.docs.length - 1];
       const encoded = Buffer.from(
@@ -84,9 +104,9 @@ const _requesthandler = async (req, res, collectionName) => {
           id: lastDoc.id
         })
       ).toString("base64");
-      nextCursor = sign(encoded);
+      response.nextCursor = sign(encoded);
     }
-    return res.json({ data, nextCursor });
+    return res.json(response);
   } catch (error) {
     logger.error("Error querying:", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -103,4 +123,4 @@ openapi.post("/recipes/query", (req, res) => {
   return _requesthandler(req, res, "recipes");
 });
 
-module.exports = openapi;
+export { openapi };

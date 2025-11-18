@@ -1,8 +1,22 @@
-const { jsPDF } = require("jspdf");
-const { formatDate } = require("./date");
-const { formatLocation } = require("./location");
+import { jsPDF } from "jspdf";
+import { formatDate } from "./date";
+import { formatLocation } from "./location";
+import { Timestamp } from "firebase-admin/firestore";
 
-async function generateConfirmationPDF(courseName, startTs, endTs, lngLat) {
+/**
+ * Generate a PDF confirmation for a booking.
+ * @param courseName Name of the course
+ * @param startTs Start time as Firestore Timestamp
+ * @param endTs End time as Firestore Timestamp
+ * @param lngLat Location as [longitude, latitude] or null for online
+ * @returns Base64 string of the generated PDF
+ */
+async function generateConfirmationPDF(
+  courseName: string,
+  startTs: Timestamp,
+  endTs: Timestamp,
+  lngLat: number[] | null
+): Promise<string> {
   const doc = new jsPDF();
 
   // Header
@@ -20,7 +34,11 @@ async function generateConfirmationPDF(courseName, startTs, endTs, lngLat) {
 
   doc.text("Dear User,", leftMargin, y);
   y += 10;
-  doc.text("We are pleased to confirm your booking. Below are your details:", leftMargin, y);
+  doc.text(
+    "We are pleased to confirm your booking. Below are your details:",
+    leftMargin,
+    y
+  );
 
   // Booking Details (indented)
   y += 15;
@@ -44,7 +62,7 @@ async function generateConfirmationPDF(courseName, startTs, endTs, lngLat) {
   doc.setFont("helvetica", "italic");
   doc.text("- Nutrition NFP", leftMargin, y);
 
-  return doc.output("datauristring").split(',')[1]; // return base64 string
+  return doc.output("datauristring").split(",")[1]; // return base64 string
 }
 
-module.exports = { generateConfirmationPDF };
+export { generateConfirmationPDF };

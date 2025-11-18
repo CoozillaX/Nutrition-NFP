@@ -6,8 +6,9 @@
  *
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
-
-const { setGlobalOptions, https } = require("firebase-functions");
+import { setGlobalOptions, https } from "firebase-functions";
+import { api as apiApp } from "./http/api";
+import { openapi as openapiApp } from "./http/openapi";
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -27,5 +28,5 @@ setGlobalOptions({
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-exports.api = https.onRequest(require("./http/api"));
-exports.openapi = https.onRequest(require("./http/openapi"));
+export const api = https.onRequest(apiApp);
+export const openapi = https.onRequest(openapiApp);
