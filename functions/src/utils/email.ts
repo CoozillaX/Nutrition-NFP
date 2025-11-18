@@ -1,10 +1,7 @@
 import sgMail from "@sendgrid/mail";
 import { Timestamp } from "firebase-admin/firestore";
 import { generateConfirmationPDF } from "./pdf";
-
-sgMail.setApiKey(
-  "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"
-);
+import { SENDGRID_API_KEY } from "./secrets";
 
 /**
  * Send a booking confirmation email with PDF attachment.
@@ -46,6 +43,8 @@ async function sendConfirmationEmail(
       }
     ]
   };
+
+  sgMail.setApiKey(SENDGRID_API_KEY.value());
   return sgMail.send(msg);
 }
 

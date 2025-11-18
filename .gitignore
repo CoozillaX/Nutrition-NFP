@@ -30,5 +30,8 @@ coverage
 
 *.tsbuildinfo
 
+# Cloud Functions
+/functions/lib
+
 private
 .env*

@@ -1,10 +1,16 @@
-import { GoogleGenAI } from "@google/genai";
 import express from "express";
+import { GoogleGenAI } from "@google/genai";
+import { GEMINI_API_KEY } from "../utils/secrets";
 
-// Initialize Google GenAI client
-const ai = new GoogleGenAI({
-  apiKey: "AIzaSyAvtOGMUB0cfsL1Xc4sjO5p6upafBOm9Hs"
-});
+// Lazy initialization of Google GenAI client
+let genAI: GoogleGenAI | null = null;
+
+function getGeminiClient() {
+  if (!genAI) {
+    genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY.value() });
+  }
+  return genAI;
+}
 
 // System prompt for the cooking plan planner
 const systemPrompt = `
@@ -52,7 +58,7 @@ plannerRouter.post("/chat", async (req, res) => {
     ];
 
     // Call the Google GenAI API
-    const response = await ai.models.generateContent({
+    const response = await getGeminiClient().models.generateContent({
       model: "gemini-2.5-flash",
       contents
     });

@@ -6,9 +6,10 @@
  *
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
-import { setGlobalOptions, https } from "firebase-functions";
+import { setGlobalOptions, https } from "firebase-functions/v2";
 import { api as apiApp } from "./http/api";
 import { openapi as openapiApp } from "./http/openapi";
+import { SENDGRID_API_KEY, GEMINI_API_KEY } from "./utils/secrets";
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -22,11 +23,14 @@ import { openapi as openapiApp } from "./http/openapi";
 // this will be the maximum concurrent request count.
 setGlobalOptions({
   maxInstances: 10,
-  region: "australia-southeast1",
+  region: "australia-southeast1"
 });
 
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-export const api = https.onRequest(apiApp);
+export const api = https.onRequest(
+  { secrets: [SENDGRID_API_KEY, GEMINI_API_KEY] },
+  apiApp
+);
 export const openapi = https.onRequest(openapiApp);
