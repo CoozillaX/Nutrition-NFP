@@ -6,7 +6,7 @@ const { sign, verify } = require("../utils/crypto");
 
 const { logger } = require("firebase-functions");
 
-const db = getFirestore(admin.app(), "fit5032-assessments-database");
+const db = getFirestore(admin.app(), "nutrition-nfp-db");
 const courseCollection = db.collection("courses");
 const recipeCollection = db.collection("recipes");
 

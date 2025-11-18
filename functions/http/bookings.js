@@ -6,7 +6,7 @@ const { sendConfirmationEmail } = require("../utils/email");
 const bookingsRouter = express.Router();
 
 admin.initializeApp();
-const db = getFirestore(admin.app(), "fit5032-assessments-database");
+const db = getFirestore(admin.app(), "nutrition-nfp-db");
 const courseCollection = db.collection("courses");
 const slotCollection = db.collection("courseSlots");
 const bookingCollection = db.collection("bookings");
