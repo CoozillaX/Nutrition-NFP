@@ -8,7 +8,7 @@ import {
   deleteObject
 } from "firebase/storage";
 
-const db = getFirestore(app, import.meta.env.VITE_FIREBASE_STORAGE_NAME);
+const db = getFirestore(app, "nutrition-nfp-db");
 const storage = getStorage();
 
 /**

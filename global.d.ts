@@ -8,7 +8,6 @@ declare global {
     readonly VITE_FIREBASE_STORAGE_BUCKET: string;
     readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
     readonly VITE_FIREBASE_APP_ID: string;
-    readonly VITE_FIREBASE_STORAGE_NAME: string;
     readonly VITE_CLOUD_FUNCTION_URL: string;
     readonly VITE_MAPBOX_TOKEN: string;
   }
