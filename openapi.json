@@ -3,7 +3,7 @@
   "info": { "title": "Nutrition NFP OpenAPI" },
   "servers": [
     {
-      "url": "https://openapi-yk7yu5onja-ts.a.run.app"
+      "url": "https://openapi-wsc77uqubq-ts.a.run.app"
     }
   ],
   "paths": {
